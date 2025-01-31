@@ -1,0 +1,30 @@
+name: Build Wheels
+on:
+  workflow_dispatch:
+  
+jobs:
+  build_wheels:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.13.1'
+
+    - name: Install cibuildwheel
+      run: |
+        sudo python -m pip install --upgrade scikit-build-core nanobind build ninja cibuildwheel auditwheel
+        sudo python -m cibuildwheel .
+        sudo python -m build --sdist
+        sudo mv ./wheelhouse/*.whl dist/
+        ls *
+
+    - name: Upload to pypi
+      uses: pypa/gh-action-pypi-publish@release/v1
