@@ -42,7 +42,6 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
-set(NB_TEST_STABLE_ABI ON)
 
 nanobind_add_module(redc_ext STABLE_ABI LTO redc/ext/redc.cpp)
 
