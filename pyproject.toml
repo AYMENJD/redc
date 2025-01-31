@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "redc"
-version = "0.1.0.dev3"
+version = "0.1.0.dev4"
 description = "RedC is a high-performance, asynchronous HTTP client library for Python, built on top of the powerful curl library"
 readme = "README.md"
 authors = [{ name = "AYMEN Mohammed", email = "let.me.code.safe@gmail.com" }]
@@ -27,5 +27,5 @@ skip = "*musllinux*"
 archs = ["x86_64"]
 
 [tool.cibuildwheel.linux]
-before-all = "yum install wget gcc openssl-devel make libpsl-devel -y && wget https://curl.se/download/curl-8.11.1.tar.gz && tar -xzvf curl-8.11.1.tar.gz && rm curl-8.11.1.tar.gz && cd curl-8.11.1 && ./configure --with-openssl && make -j && make install && ldconfig && curl --version && cd .. && rm -rf curl-8.11.1"
+before-all = "yum install wget gcc openssl-devel make libpsl-devel -y && wget https://curl.se/download/curl-8.11.1.tar.gz && tar -xzvf curl-8.11.1.tar.gz && rm curl-8.11.1.tar.gz && cd curl-8.11.1 && ./configure --with-openssl --with-ca-fallback --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt && make -j && make install && ldconfig && curl --version && cd .. && rm -rf curl-8.11.1"
 manylinux-x86_64-image = "manylinux2014"
