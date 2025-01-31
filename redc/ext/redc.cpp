@@ -52,7 +52,8 @@ void RedC::close() {
 py_object RedC::request(const string &method, const string &url, const char *raw_data, const py_object &data,
                         const py_object &files, const py_object &headers, const long &timeout_ms,
                         const long &connect_timeout_ms, const bool &allow_redirect, const string &proxy_url,
-                        const bool &verify, const py_object &stream_callback, const bool &verbose) {
+                        const bool &verify, const char *ca_cert_path, const py_object &stream_callback,
+                        const bool &verbose) {
   CHECK_RUNNING();
 
   if (method.empty() || url.empty()) {
@@ -100,6 +101,8 @@ py_object RedC::request(const string &method, const string &url, const char *raw
     if (!verify) {
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0);
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0);
+    } else if (ca_cert_path && *ca_cert_path) {
+      curl_easy_setopt(easy, CURLOPT_CAINFO, ca_cert_path);
     }
 
     CurlMime curl_mime_;
@@ -317,6 +320,6 @@ NB_MODULE(redc_ext, m) {
       .def("request", &RedC::request, arg("method"), arg("url"), arg("raw_data") = "", arg("data") = nb::none(),
            arg("files") = nb::none(), arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirect") = true, arg("proxy_url") = "", arg("verify") = true,
-           arg("stream_callback") = nb::none(), arg("verbose") = false)
+           arg("ca_cert_path") = "", arg("stream_callback") = nb::none(), arg("verbose") = false)
       .def("close", &RedC::close);
 }

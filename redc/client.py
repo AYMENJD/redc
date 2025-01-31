@@ -13,6 +13,7 @@ class Client:
         self,
         base_url: str = None,
         buffer_size: int = 16384,
+        ca_cert_path: str = None,
         force_verbose: bool = None,
         json_encoder=json_dumps,
     ):
@@ -32,6 +33,9 @@ class Client:
             buffer_size (``int``, *optional*):
                 The buffer size for libcurl. Must be greater than ``1024`` bytes. Default is ``16384`` (16KB)
 
+            ca_cert_path (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``
+
             force_verbose (``bool``, *optional*):
                 Force verbose output for all requests. Default is ``None``
 
@@ -41,6 +45,10 @@ class Client:
 
         assert isinstance(base_url, (str, type(None))), "base_url must be string"
         assert isinstance(buffer_size, int), "buffer_size must be int"
+        assert isinstance(ca_cert_path, (str, type(None))), (
+            "ca_cert_path must be string"
+        )
+
         assert buffer_size >= 1024, "buffer_size must be bigger than 1024 bytes"
 
         assert isinstance(force_verbose, (bool, type(None))), (
@@ -50,8 +58,9 @@ class Client:
         self.force_verbose = force_verbose
 
         self.__base_url = (
-            None if not isinstance(base_url, str) else parse_base_url(base_url)
+            parse_base_url(base_url) if isinstance(base_url, str) else None
         )
+        self.__ca_cert_path = ca_cert_path if isinstance(ca_cert_path, str) else ""
         self.__json_encoder = json_encoder
         self.__redc_ext = RedC(buffer_size)
 
@@ -193,6 +202,7 @@ class Client:
                     allow_redirect=allow_redirect,
                     proxy_url=proxy_url,
                     verify=verify,
+                    ca_cert_path=self.__ca_cert_path,
                     stream_callback=stream_callback,
                     verbose=self.force_verbose or verbose,
                 )

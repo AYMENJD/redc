@@ -52,8 +52,8 @@ class RedC {
                     const py_object &data = nb::none(), const py_object &files = nb::none(),
                     const py_object &headers = nb::none(), const long &timeout_ms = 60 * 1000,
                     const long &connect_timeout_ms = 0, const bool &allow_redirect = true, const string &proxy_url = "",
-                    const bool &verify = true, const py_object &stream_callback = nb::none(),
-                    const bool &verbose = false);
+                    const bool &verify = true, const char *ca_cert_path = "",
+                    const py_object &stream_callback = nb::none(), const bool &verbose = false);
 
  private:
   int still_running_ = 0;
