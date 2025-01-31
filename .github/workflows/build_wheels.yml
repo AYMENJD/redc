@@ -1,9 +1,15 @@
-name: Build Wheels
+name: Build and Publish Wheels
 on:
   workflow_dispatch:
-  
+  push:
+    branches:
+      - "main"
+
+    paths:
+      - "redc/__init__.py"
+
 jobs:
-  build_wheels:
+  build-and-publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -18,13 +24,16 @@ jobs:
       with:
         python-version: '3.13.1'
 
-    - name: Install cibuildwheel
+    - name: Install dependencies
       run: |
-        sudo python -m pip install --upgrade scikit-build-core nanobind build ninja cibuildwheel auditwheel
-        sudo python -m cibuildwheel .
-        sudo python -m build --sdist
-        sudo mv ./wheelhouse/*.whl dist/
-        ls *
+        python -m pip install --upgrade scikit-build-core nanobind build ninja cibuildwheel auditwheel
 
-    - name: Upload to pypi
+    - name: Build wheels
+      run: |
+        python -m cibuildwheel .
+        python -m build --sdist
+        mv ./wheelhouse/*.whl dist/
+        ls dist/
+
+    - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
