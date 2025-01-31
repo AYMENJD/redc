@@ -49,14 +49,14 @@ void RedC::close() {
   }
 }
 
-py_object RedC::request(const string &method, const string &url, const char *raw_data, const py_object &data,
+py_object RedC::request(const char *method, const char *url, const char *raw_data, const py_object &data,
                         const py_object &files, const py_object &headers, const long &timeout_ms,
-                        const long &connect_timeout_ms, const bool &allow_redirect, const string &proxy_url,
+                        const long &connect_timeout_ms, const bool &allow_redirect, const char *proxy_url,
                         const bool &verify, const char *ca_cert_path, const py_object &stream_callback,
                         const bool &verbose) {
   CHECK_RUNNING();
 
-  if (method.empty() || url.empty()) {
+  if (isNullOrEmpty(method) || isNullOrEmpty(url)) {
     throw std::invalid_argument("method or url must be non-empty");
   }
 
@@ -65,10 +65,12 @@ py_object RedC::request(const string &method, const string &url, const char *raw
     throw std::runtime_error("Failed to create CURL easy handle");
   }
 
+  bool is_nobody = (strcmp(method, "HEAD") == 0 || strcmp(method, "OPTIONS") == 0);
+
   try {
     curl_easy_setopt(easy, CURLOPT_BUFFERSIZE, buffer_size_);
-    curl_easy_setopt(easy, CURLOPT_URL, url.c_str());
-    curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method.c_str());
+    curl_easy_setopt(easy, CURLOPT_URL, url);
+    curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method);
 
     curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
     curl_easy_setopt(easy, CURLOPT_TIMEOUT_MS, timeout_ms);
@@ -83,7 +85,7 @@ py_object RedC::request(const string &method, const string &url, const char *raw
       curl_easy_setopt(easy, CURLOPT_CONNECTTIMEOUT_MS, connect_timeout_ms);
     }
 
-    if (method == "HEAD" || method == "OPTIONS") {
+    if (is_nobody) {
       curl_easy_setopt(easy, CURLOPT_NOBODY, 1L);
     } else {
       curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, &RedC::write_callback);
@@ -94,19 +96,19 @@ py_object RedC::request(const string &method, const string &url, const char *raw
       curl_easy_setopt(easy, CURLOPT_MAXREDIRS, 30L);
     }
 
-    if (!proxy_url.empty()) {
-      curl_easy_setopt(easy, CURLOPT_PROXY, proxy_url.c_str());
+    if (!isNullOrEmpty(proxy_url)) {
+      curl_easy_setopt(easy, CURLOPT_PROXY, proxy_url);
     }
 
     if (!verify) {
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0);
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0);
-    } else if (ca_cert_path && *ca_cert_path) {
+    } else if (!isNullOrEmpty(ca_cert_path)) {
       curl_easy_setopt(easy, CURLOPT_CAINFO, ca_cert_path);
     }
 
     CurlMime curl_mime_;
-    if (raw_data && *raw_data) {
+    if (!isNullOrEmpty(raw_data)) {
       curl_easy_setopt(easy, CURLOPT_POSTFIELDS, raw_data);
       curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE, (curl_off_t)strlen(raw_data));
     } else if (!data.is_none() || !files.is_none()) {
@@ -168,13 +170,13 @@ py_object RedC::request(const string &method, const string &url, const char *raw
       d.request_headers = std::move(slist_headers);
       d.curl_mime_ = std::move(curl_mime_);
 
-      if (!stream_callback.is_none()) {
-        d.stream_callback = stream_callback;
-      }
-
       curl_easy_setopt(easy, CURLOPT_HEADERDATA, &d);
-      if (method != "HEAD" || method != "OPTIONS") {
+      if (!is_nobody) {
         curl_easy_setopt(easy, CURLOPT_WRITEDATA, &d);
+
+        if (!stream_callback.is_none()) {
+          d.stream_callback = stream_callback;
+        }
       }
     }
 

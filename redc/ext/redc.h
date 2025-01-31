@@ -5,7 +5,6 @@
 #include <cstring>
 #include <map>
 #include <mutex>
-#include <string>
 #include <thread>
 #include <vector>
 
@@ -21,12 +20,15 @@
 namespace nb = nanobind;
 using namespace nb::literals;
 
-using string = std::string;
-using py_object = nb::object;
 using acq_gil = nb::gil_scoped_acquire;
-using arg = nb::arg;
+using py_object = nb::object;
 using py_bytes = nb::bytes;
+using arg = nb::arg;
 using dict = nb::dict;
+
+bool isNullOrEmpty(const char *str) {
+  return !str || !*str;
+}
 
 struct Data {
   py_object future;
@@ -48,12 +50,12 @@ class RedC {
   bool is_running();
   void close();
 
-  py_object request(const string &method, const string &url, const char *raw_data = "",
-                    const py_object &data = nb::none(), const py_object &files = nb::none(),
-                    const py_object &headers = nb::none(), const long &timeout_ms = 60 * 1000,
-                    const long &connect_timeout_ms = 0, const bool &allow_redirect = true, const string &proxy_url = "",
-                    const bool &verify = true, const char *ca_cert_path = "",
-                    const py_object &stream_callback = nb::none(), const bool &verbose = false);
+  py_object request(const char *method, const char *url, const char *raw_data = "", const py_object &data = nb::none(),
+                    const py_object &files = nb::none(), const py_object &headers = nb::none(),
+                    const long &timeout_ms = 60 * 1000, const long &connect_timeout_ms = 0,
+                    const bool &allow_redirect = true, const char *proxy_url = "", const bool &verify = true,
+                    const char *ca_cert_path = "", const py_object &stream_callback = nb::none(),
+                    const bool &verbose = false);
 
  private:
   int still_running_ = 0;
