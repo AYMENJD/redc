@@ -14,7 +14,7 @@ __all__ = [
     "utils",
 ]
 
-__version__ = "0.1.0.dev5"
+__version__ = "0.1.0"
 __copyright__ = "Copyright (c) 2025 RedC, AYMENJD"
 __license__ = "MIT License"
 
