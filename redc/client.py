@@ -13,6 +13,7 @@ class Client:
         self,
         base_url: str = None,
         buffer_size: int = 16384,
+        headers: dict = None,
         ca_cert_path: str = None,
         force_verbose: bool = None,
         json_encoder=json_dumps,
@@ -32,6 +33,9 @@ class Client:
 
             buffer_size (``int``, *optional*):
                 The buffer size for libcurl. Must be greater than ``1024`` bytes. Default is ``16384`` (16KB)
+
+            headers (``dict``, *optional*):
+                Headers to include in every request. Default is ``None``
 
             ca_cert_path (``str``, *optional*):
                 Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``
@@ -60,6 +64,7 @@ class Client:
         self.__base_url = (
             parse_base_url(base_url) if isinstance(base_url, str) else None
         )
+        self.__default_headers = headers if isinstance(headers, dict) else {}
         self.__ca_cert_path = ca_cert_path if isinstance(ca_cert_path, str) else ""
         self.__json_encoder = json_encoder
         self.__redc_ext = RedC(buffer_size)
@@ -181,9 +186,12 @@ class Client:
 
         if headers is not None:
             if isinstance(headers, dict):
+                headers = {**self.__default_headers, **headers}
                 headers = [f"{k}: {v}" for k, v in headers.items()]
             else:
                 raise TypeError("headers must be of type dict[str, str]")
+        else:
+            headers = [f"{k}: {v}" for k, v in self.__default_headers.items()]
 
         if self.__base_url:
             url = f"{self.__base_url}{url.lstrip('/')}"
