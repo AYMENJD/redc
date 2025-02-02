@@ -1,6 +1,5 @@
 from .exceptions import HTTPError
 from .utils import Headers, json_loads
-from .codes import HTTPStatus
 
 
 class Response:
@@ -11,6 +10,7 @@ class Response:
         response: bytes,
         curl_code: int,
         curl_error_message: str,
+        raise_for_status: bool = False,
     ):
         """Represents an HTTP response of RedC"""
 
@@ -26,6 +26,9 @@ class Response:
         """CURL return code"""
         self.curl_error_message = curl_error_message
         """CURL error message"""
+
+        if raise_for_status:
+            self.raise_for_status()
 
     @property
     def content(self) -> bytes:

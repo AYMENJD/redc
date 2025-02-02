@@ -17,6 +17,7 @@ class Client:
         timeout: tuple = (30.0, 0.0),
         ca_cert_path: str = None,
         force_verbose: bool = None,
+        raise_for_status: bool = False,
         json_encoder=json_dumps,
     ):
         """
@@ -47,6 +48,10 @@ class Client:
             force_verbose (``bool``, *optional*):
                 Force verbose output for all requests. Default is ``None``
 
+            raise_for_status (``bool``, *optional*):
+                If ``True``, automatically raises an :class:`redc.HTTPError` for responses with HTTP status codes
+                indicating an error (i.e., 4xx or 5xx) or for CURL errors (e.g., network issues, timeouts). Default is ``False``
+
             json_encoder (``Callable`` , *optional*):
                 A callable for encoding JSON data. Default is :class:`redc.utils.json_dumps`
         """
@@ -62,10 +67,12 @@ class Client:
         assert isinstance(force_verbose, (bool, type(None))), (
             "force_verbose must be bool or None"
         )
+        assert isinstance(raise_for_status, bool), "raise_for_status must be bool"
 
         assert buffer_size >= 1024, "buffer_size must be bigger than 1024 bytes"
 
         self.force_verbose = force_verbose
+        self.raise_for_status = raise_for_status
 
         self.__base_url = (
             parse_base_url(base_url) if isinstance(base_url, str) else None
@@ -220,7 +227,8 @@ class Client:
                     stream_callback=stream_callback,
                     verbose=self.force_verbose or verbose,
                 )
-            )
+            ),
+            raise_for_status=self.raise_for_status,
         )
 
     async def get(
