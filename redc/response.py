@@ -58,16 +58,8 @@ class Response:
 
     def raise_for_status(self):
         """Raises an HTTPError if the response status indicates an error"""
-        if self.status_code == -1:  # Curl error
-            raise HTTPError(f"CURL {self.curl_code}: {self.curl_error_message}")
-
-        if 400 <= self.status_code <= 599:
-            short_description = HTTPStatus.get_description(self.status_code)
-            raise HTTPError(
-                self.status_code
-                if not short_description
-                else f"{self.status_code} - {short_description}"
-            )
+        if self.status_code == -1 or (400 <= self.status_code <= 599):
+            raise HTTPError(self.status_code, self.curl_code, self.curl_error_message)
 
     def __bool__(self):
         return self.status_code != -1 and 200 <= self.status_code <= 299
