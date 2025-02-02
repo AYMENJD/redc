@@ -14,6 +14,7 @@ class Client:
         base_url: str = None,
         buffer_size: int = 16384,
         headers: dict = None,
+        timeout: tuple = (30.0, 0.0),
         ca_cert_path: str = None,
         force_verbose: bool = None,
         json_encoder=json_dumps,
@@ -37,6 +38,9 @@ class Client:
             headers (``dict``, *optional*):
                 Headers to include in every request. Default is ``None``
 
+            timeout (``tuple``, *optional*):
+                A tuple of `(total_timeout, connect_timeout)` in seconds to include in every request. Default is ``(30.0, 0.0)``
+
             ca_cert_path (``str``, *optional*):
                 Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``
 
@@ -44,7 +48,7 @@ class Client:
                 Force verbose output for all requests. Default is ``None``
 
             json_encoder (``Callable`` , *optional*):
-                A callable for encoding JSON data. Default is ``json_dumps``
+                A callable for encoding JSON data. Default is :class:`redc.utils.json_dumps`
         """
 
         assert isinstance(base_url, (str, type(None))), "base_url must be string"
@@ -52,12 +56,14 @@ class Client:
         assert isinstance(ca_cert_path, (str, type(None))), (
             "ca_cert_path must be string"
         )
-
-        assert buffer_size >= 1024, "buffer_size must be bigger than 1024 bytes"
-
+        assert isinstance(timeout, tuple) and len(timeout) == 2, (
+            "timeout must be a tuple of (total_timeout, connect_timeout)"
+        )
         assert isinstance(force_verbose, (bool, type(None))), (
             "force_verbose must be bool or None"
         )
+
+        assert buffer_size >= 1024, "buffer_size must be bigger than 1024 bytes"
 
         self.force_verbose = force_verbose
 
@@ -65,6 +71,7 @@ class Client:
             parse_base_url(base_url) if isinstance(base_url, str) else None
         )
         self.__default_headers = headers if isinstance(headers, dict) else {}
+        self.__timeout = timeout
         self.__ca_cert_path = ca_cert_path if isinstance(ca_cert_path, str) else ""
         self.__json_encoder = json_encoder
         self.__redc_ext = RedC(buffer_size)
@@ -84,8 +91,7 @@ class Client:
         data: dict[str, str] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
-        timeout: float = 30.0,
-        connect_timeout: float = 0.0,
+        timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
@@ -122,11 +128,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
-            timeout (``float``, *optional*):
-                The total timeout for the request in seconds. Default is ``30.0``
-
-            connect_timeout (``float``, *optional*):
-                The connection timeout for the request in seconds. Default is ``0.0``
+            timeout (``tuple``, *optional*):
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
+                If ``None``, the default timeout specified in ``Client`` is used.
 
             allow_redirect (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
@@ -176,6 +180,8 @@ class Client:
             if not isinstance(files, dict):
                 raise TypeError("files must be of type dict[str, str]")
 
+        timeout, connect_timeout = timeout if timeout is not None else self.__timeout
+
         if timeout <= 0:
             raise ValueError("timeout must be greater than 0")
 
@@ -221,8 +227,7 @@ class Client:
         self,
         url: str,
         headers: dict[str, str] = None,
-        timeout: float = 30.0,
-        connect_timeout: float = 0.0,
+        timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
@@ -244,11 +249,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
-            timeout (``float``, *optional*):
-                The total timeout for the request in seconds. Default is ``30.0``
-
-            connect_timeout (``float``, *optional*):
-                The connection timeout for the request in seconds. Default is ``0.0``
+            timeout (``tuple``, *optional*):
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
+                If ``None``, the default timeout specified in ``Client`` is used.
 
             allow_redirect (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
@@ -268,12 +271,12 @@ class Client:
         Returns:
             :class:`redc.Response`
         """
+
         return await self.request(
             method="GET",
             url=url,
             headers=headers,
             timeout=timeout,
-            connect_timeout=connect_timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
@@ -285,8 +288,7 @@ class Client:
         self,
         url: str,
         headers: dict[str, str] = None,
-        timeout: float = 30.0,
-        connect_timeout: float = 0.0,
+        timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
@@ -307,11 +309,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
-            timeout (``float``, *optional*):
-                The total timeout for the request in seconds. Default is ``30.0``
-
-            connect_timeout (``float``, *optional*):
-                The connection timeout for the request in seconds. Default is ``0.0``
+            timeout (``tuple``, *optional*):
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
+                If ``None``, the default timeout specified in ``Client`` is used.
 
             allow_redirect (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
@@ -333,7 +333,6 @@ class Client:
             url=url,
             headers=headers,
             timeout=timeout,
-            connect_timeout=connect_timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
@@ -348,8 +347,7 @@ class Client:
         data: dict[str, str] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
-        timeout: float = 30.0,
-        connect_timeout: float = 0.0,
+        timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
@@ -387,11 +385,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
-            timeout (``float``, *optional*):
-                The total timeout for the request in seconds. Default is ``30.0``
-
-            connect_timeout (``float``, *optional*):
-                The connection timeout for the request in seconds. Default is ``0.0``
+            timeout (``tuple``, *optional*):
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
+                If ``None``, the default timeout specified in ``Client`` is used.
 
             allow_redirect (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
@@ -420,7 +416,6 @@ class Client:
             files=files,
             headers=headers,
             timeout=timeout,
-            connect_timeout=connect_timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
@@ -436,8 +431,7 @@ class Client:
         data: dict[str, str] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
-        timeout: float = 30.0,
-        connect_timeout: float = 0.0,
+        timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
@@ -475,11 +469,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
-            timeout (``float``, *optional*):
-                The total timeout for the request in seconds. Default is ``30.0``
-
-            connect_timeout (``float``, *optional*):
-                The connection timeout for the request in seconds. Default is ``0.0``
+            timeout (``tuple``, *optional*):
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
+                If ``None``, the default timeout specified in ``Client`` is used.
 
             allow_redirect (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
@@ -508,7 +500,6 @@ class Client:
             files=files,
             headers=headers,
             timeout=timeout,
-            connect_timeout=connect_timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
@@ -524,8 +515,7 @@ class Client:
         data: dict[str, str] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
-        timeout: float = 30.0,
-        connect_timeout: float = 0.0,
+        timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
@@ -563,11 +553,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
-            timeout (``float``, *optional*):
-                The total timeout for the request in seconds. Default is ``30.0``
-
-            connect_timeout (``float``, *optional*):
-                The connection timeout for the request in seconds. Default is ``0.0``
+            timeout (``tuple``, *optional*):
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
+                If ``None``, the default timeout specified in ``Client`` is used.
 
             allow_redirect (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
@@ -597,7 +585,6 @@ class Client:
             files=files,
             headers=headers,
             timeout=timeout,
-            connect_timeout=connect_timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
@@ -609,8 +596,7 @@ class Client:
         self,
         url: str,
         headers: dict[str, str] = None,
-        timeout: float = 30.0,
-        connect_timeout: float = 0.0,
+        timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
@@ -632,11 +618,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
-            timeout (``float``, *optional*):
-                The total timeout for the request in seconds. Default is ``30.0``
-
-            connect_timeout (``float``, *optional*):
-                The connection timeout for the request in seconds. Default is ``0.0``
+            timeout (``tuple``, *optional*):
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
+                If ``None``, the default timeout specified in ``Client`` is used.
 
             allow_redirect (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
@@ -661,7 +645,6 @@ class Client:
             url=url,
             headers=headers,
             timeout=timeout,
-            connect_timeout=connect_timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
@@ -673,8 +656,7 @@ class Client:
         self,
         url: str,
         headers: dict[str, str] = None,
-        timeout: float = 30.0,
-        connect_timeout: float = 0.0,
+        timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
@@ -695,11 +677,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
-            timeout (``float``, *optional*):
-                The total timeout for the request in seconds. Default is ``30.0``
-
-            connect_timeout (``float``, *optional*):
-                The connection timeout for the request in seconds. Default is ``0.0``
+            timeout (``tuple``, *optional*):
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
+                If ``None``, the default timeout specified in ``Client`` is used.
 
             allow_redirect (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
@@ -721,7 +701,6 @@ class Client:
             url=url,
             headers=headers,
             timeout=timeout,
-            connect_timeout=connect_timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
