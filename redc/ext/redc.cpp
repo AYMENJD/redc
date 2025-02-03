@@ -53,7 +53,7 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
                         const py_object &files, const py_object &headers, const long &timeout_ms,
                         const long &connect_timeout_ms, const bool &allow_redirect, const char *proxy_url,
                         const bool &verify, const char *ca_cert_path, const py_object &stream_callback,
-                        const bool &verbose) {
+                        const py_object &progress_callback, const bool &verbose) {
   CHECK_RUNNING();
 
   if (isNullOrEmpty(method) || isNullOrEmpty(url)) {
@@ -72,7 +72,6 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
     curl_easy_setopt(easy, CURLOPT_URL, url);
     curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method);
 
-    curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
     curl_easy_setopt(easy, CURLOPT_TIMEOUT_MS, timeout_ms);
 
     curl_easy_setopt(easy, CURLOPT_HEADERFUNCTION, &RedC::header_callback);
@@ -176,6 +175,16 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
 
         if (!stream_callback.is_none()) {
           d.stream_callback = stream_callback;
+        }
+
+        if (!progress_callback.is_none()) {
+          d.progress_callback = progress_callback;
+
+          curl_easy_setopt(easy, CURLOPT_XFERINFODATA, &d);
+          curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 0L);
+          curl_easy_setopt(easy, CURLOPT_XFERINFOFUNCTION, &RedC::progress_callback);
+        } else {
+          curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
         }
       }
     }
@@ -299,6 +308,20 @@ size_t RedC::header_callback(char *buffer, size_t size, size_t nitems, Data *cli
   return total_size;
 }
 
+size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+                               curl_off_t ulnow) {
+  if (!clientp->progress_callback.is_none()) {
+    try {
+      acq_gil gil;
+      clientp->progress_callback(dltotal, dlnow, ultotal, ulnow);
+    } catch (const std::exception &e) {
+      std::cerr << "Error in progress_callback: " << e.what() << std::endl;
+    }
+  }
+
+  return 0;
+}
+
 size_t RedC::write_callback(char *data, size_t size, size_t nmemb, Data *clientp) {
   size_t total_size = size * nmemb;
 
@@ -322,6 +345,7 @@ NB_MODULE(redc_ext, m) {
       .def("request", &RedC::request, arg("method"), arg("url"), arg("raw_data") = "", arg("data") = nb::none(),
            arg("files") = nb::none(), arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirect") = true, arg("proxy_url") = "", arg("verify") = true,
-           arg("ca_cert_path") = "", arg("stream_callback") = nb::none(), arg("verbose") = false)
+           arg("ca_cert_path") = "", arg("stream_callback") = nb::none(), arg("progress_callback") = nb::none(),
+           arg("verbose") = false)
       .def("close", &RedC::close);
 }

@@ -1,4 +1,4 @@
-from .callbacks import StreamCallback
+from .callbacks import StreamCallback, ProgressCallback
 from .client import Client
 from .codes import HTTPStatus
 from .exceptions import HTTPError
@@ -11,6 +11,7 @@ __all__ = [
     "HTTPError",
     "HTTPStatus",
     "StreamCallback",
+    "ProgressCallback",
     "utils",
 ]
 

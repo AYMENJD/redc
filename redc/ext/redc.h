@@ -34,6 +34,7 @@ struct Data {
   py_object future;
   py_object loop;
   py_object stream_callback = nb::none();
+  py_object progress_callback = nb::none();
 
   std::vector<char> headers;
   CurlSlist request_headers;
@@ -55,7 +56,7 @@ class RedC {
                     const long &timeout_ms = 60 * 1000, const long &connect_timeout_ms = 0,
                     const bool &allow_redirect = true, const char *proxy_url = "", const bool &verify = true,
                     const char *ca_cert_path = "", const py_object &stream_callback = nb::none(),
-                    const bool &verbose = false);
+                    const py_object &progress_callback = nb::none(), const bool &verbose = false);
 
  private:
   int still_running_ = 0;
@@ -77,6 +78,8 @@ class RedC {
   void CHECK_RUNNING();
 
   static size_t header_callback(char *buffer, size_t size, size_t nitems, Data *clientp);
+  static size_t progress_callback(Data *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
+                                  curl_off_t ulnow);
   static size_t write_callback(char *data, size_t size, size_t nmemb, Data *clientp);
 };
 

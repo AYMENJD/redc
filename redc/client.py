@@ -1,6 +1,6 @@
 from urllib.parse import urlencode
 
-from .callbacks import StreamCallback
+from .callbacks import StreamCallback, ProgressCallback
 from .redc_ext import RedC
 from .response import Response
 from .utils import json_dumps, parse_base_url
@@ -103,6 +103,7 @@ class Client:
         proxy_url: str = "",
         verify: bool = True,
         stream_callback: StreamCallback = None,
+        progress_callback: ProgressCallback = None,
         verbose: bool = False,
     ):
         """
@@ -151,6 +152,9 @@ class Client:
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
+            progress_callback (:class:`redc.ProgressCallback`, *optional*):
+                Callback for tracking upload and download progress. Default is ``None``
+
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
@@ -163,6 +167,12 @@ class Client:
                 raise TypeError("stream_callback must be of type StreamCallback")
 
             stream_callback = stream_callback.callback
+
+        if progress_callback is not None:
+            if not isinstance(progress_callback, ProgressCallback):
+                raise TypeError("progress_callback must be of type ProgressCallback")
+
+            progress_callback = progress_callback.callback
 
         if form is not None:
             if isinstance(form, dict):
@@ -225,6 +235,7 @@ class Client:
                     verify=verify,
                     ca_cert_path=self.__ca_cert_path,
                     stream_callback=stream_callback,
+                    progress_callback=progress_callback,
                     verbose=self.force_verbose or verbose,
                 )
             ),
@@ -240,6 +251,7 @@ class Client:
         proxy_url: str = "",
         verify: bool = True,
         stream_callback: StreamCallback = None,
+        progress_callback: ProgressCallback = None,
         verbose: bool = False,
     ):
         """
@@ -273,6 +285,9 @@ class Client:
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
+            progress_callback (:class:`redc.ProgressCallback`, *optional*):
+                Callback for tracking upload and download progress. Default is ``None``
+
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
@@ -289,6 +304,7 @@ class Client:
             proxy_url=proxy_url,
             verify=verify,
             stream_callback=stream_callback,
+            progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
         )
 
@@ -360,6 +376,7 @@ class Client:
         proxy_url: str = "",
         verify: bool = True,
         stream_callback: StreamCallback = None,
+        progress_callback: ProgressCallback = None,
         verbose: bool = False,
     ):
         """
@@ -409,6 +426,9 @@ class Client:
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
+            progress_callback (:class:`redc.ProgressCallback`, *optional*):
+                Callback for tracking upload and download progress. Default is ``None``
+
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
@@ -428,6 +448,7 @@ class Client:
             proxy_url=proxy_url,
             verify=verify,
             stream_callback=stream_callback,
+            progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
         )
 
@@ -444,6 +465,7 @@ class Client:
         proxy_url: str = "",
         verify: bool = True,
         stream_callback: StreamCallback = None,
+        progress_callback: ProgressCallback = None,
         verbose: bool = False,
     ):
         """
@@ -493,6 +515,9 @@ class Client:
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
+            progress_callback (:class:`redc.ProgressCallback`, *optional*):
+                Callback for tracking upload and download progress. Default is ``None``
+
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
@@ -512,6 +537,7 @@ class Client:
             proxy_url=proxy_url,
             verify=verify,
             stream_callback=stream_callback,
+            progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
         )
 
@@ -528,6 +554,7 @@ class Client:
         proxy_url: str = "",
         verify: bool = True,
         stream_callback: StreamCallback = None,
+        progress_callback: ProgressCallback = None,
         verbose: bool = False,
     ):
         """
@@ -577,6 +604,9 @@ class Client:
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
+            progress_callback (:class:`redc.ProgressCallback`, *optional*):
+                Callback for tracking upload and download progress. Default is ``None``
+
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
@@ -597,6 +627,7 @@ class Client:
             proxy_url=proxy_url,
             verify=verify,
             stream_callback=stream_callback,
+            progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
         )
 
@@ -609,6 +640,7 @@ class Client:
         proxy_url: str = "",
         verify: bool = True,
         stream_callback: StreamCallback = None,
+        progress_callback: ProgressCallback = None,
         verbose: bool = False,
     ):
         """
@@ -642,6 +674,9 @@ class Client:
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
+            progress_callback (:class:`redc.ProgressCallback`, *optional*):
+                Callback for tracking upload and download progress. Default is ``None``
+
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
@@ -657,6 +692,7 @@ class Client:
             proxy_url=proxy_url,
             verify=verify,
             stream_callback=stream_callback,
+            progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
         )
 
