@@ -21,6 +21,8 @@ namespace nb = nanobind;
 using namespace nb::literals;
 
 using acq_gil = nb::gil_scoped_acquire;
+using rel_gil = nb::gil_scoped_release;
+
 using py_object = nb::object;
 using py_bytes = nb::bytes;
 using arg = nb::arg;
@@ -33,8 +35,8 @@ bool isNullOrEmpty(const char *str) {
 struct Data {
   py_object future;
   py_object loop;
-  py_object stream_callback = nb::none();
-  py_object progress_callback = nb::none();
+  py_object stream_callback{nb::none()};
+  py_object progress_callback{nb::none()};
 
   std::vector<char> headers;
   CurlSlist request_headers;
@@ -59,17 +61,17 @@ class RedC {
                     const py_object &progress_callback = nb::none(), const bool &verbose = false);
 
  private:
-  int still_running_ = 0;
+  int still_running_{0};
   long buffer_size_;
   py_object loop_;
-  py_object builtins_;
+  py_object call_soon_threadsafe_;
 
   CURLM *multi_handle_;
 
   std::map<CURL *, Data> transfers_;
   std::mutex mutex_;
   std::thread worker_thread_;
-  std::atomic<bool> running_ = false;
+  std::atomic<bool> running_{false};
 
   moodycamel::ConcurrentQueue<CURL *> queue_;
 

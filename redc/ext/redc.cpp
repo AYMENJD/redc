@@ -7,6 +7,7 @@ RedC::RedC(const long &buffer) {
   {
     acq_gil gil;
     loop_ = nb::module_::import_("asyncio").attr("get_event_loop")();
+    call_soon_threadsafe_ = loop_.attr("call_soon_threadsafe");
   }
 
   static CurlGlobalInit g;
@@ -38,13 +39,14 @@ bool RedC::is_running() {
 void RedC::close() {
   if (running_) {
     running_ = false;
-    curl_multi_wakeup(multi_handle_);
 
     if (worker_thread_.joinable()) {
+      curl_multi_wakeup(multi_handle_);
       worker_thread_.join();
     }
 
     cleanup();
+
     curl_multi_cleanup(multi_handle_);
   }
 }
@@ -201,9 +203,6 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
 
 void RedC::worker_loop() {
   while (running_) {
-    if (!running_)
-      break;
-
     CURL *e;
     if (queue_.try_dequeue(e)) {
       CURLMcode res = curl_multi_add_handle(multi_handle_, e);
@@ -216,7 +215,7 @@ void RedC::worker_loop() {
           lock.unlock();
           {
             acq_gil gil;
-            loop_.attr("call_soon_threadsafe")(nb::cpp_function([data = std::move(data), res]() {
+            call_soon_threadsafe_(nb::cpp_function([data = std::move(data), res]() {
               data.future.attr("set_result")(nb::make_tuple(-1, NULL, NULL, (int)res, curl_multi_strerror(res)));
             }));
           }
@@ -226,6 +225,10 @@ void RedC::worker_loop() {
     } else {
       int numfds;
       curl_multi_poll(multi_handle_, nullptr, 0, 30000, &numfds);
+    }
+
+    if (!running_) {
+      return;
     }
 
     curl_multi_perform(multi_handle_, &still_running_);
@@ -271,7 +274,7 @@ void RedC::worker_loop() {
               result = nb::make_tuple(-1, NULL, NULL, (int)res, curl_easy_strerror(res));
             }
 
-            loop_.attr("call_soon_threadsafe")(nb::cpp_function([data = std::move(data), result = std::move(result)]() {
+            call_soon_threadsafe_(nb::cpp_function([data = std::move(data), result = std::move(result)]() {
               data.future.attr("set_result")(std::move(result));
             }));
           }
@@ -286,9 +289,12 @@ void RedC::worker_loop() {
 
 void RedC::cleanup() {
   std::unique_lock<std::mutex> lock(mutex_);
-  acq_gil gil;
   for (auto &[easy, data] : transfers_) {
-    loop_.attr("call_soon_threadsafe")(nb::cpp_function([data = std::move(data)]() { data.future.attr("cancel")(); }));
+    {
+      acq_gil gil;
+      call_soon_threadsafe_(data.future.attr("cancel"));
+    }
+
     curl_multi_remove_handle(multi_handle_, easy);
     curl_easy_cleanup(easy);
   }
