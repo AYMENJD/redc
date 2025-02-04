@@ -89,6 +89,16 @@ class Client:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.close()
 
+    @property
+    def is_running(self):
+        """Checks if RedC is currently running
+
+        Returns:
+            ``bool``: ``True`` if RedC is running, False otherwise
+        """
+
+        return self.__redc_ext.is_running()
+
     async def request(
         self,
         method: str,

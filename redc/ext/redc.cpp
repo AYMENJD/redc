@@ -348,6 +348,7 @@ size_t RedC::write_callback(char *data, size_t size, size_t nmemb, Data *clientp
 NB_MODULE(redc_ext, m) {
   nb::class_<RedC>(m, "RedC")
       .def(nb::init<const long &>())
+      .def("is_running", &RedC::is_running)
       .def("request", &RedC::request, arg("method"), arg("url"), arg("raw_data") = "", arg("data") = nb::none(),
            arg("files") = nb::none(), arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirect") = true, arg("proxy_url") = "", arg("verify") = true,
