@@ -43,7 +43,7 @@ if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-nanobind_add_module(redc_ext STABLE_ABI LTO redc/ext/redc.cpp)
+nanobind_add_module(redc_ext STABLE_ABI FREE_THREADED LTO redc/ext/redc.cpp)
 
 target_link_libraries(redc_ext PRIVATE CURL::libcurl)
 
