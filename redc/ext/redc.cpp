@@ -73,6 +73,7 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
     curl_easy_setopt(easy, CURLOPT_BUFFERSIZE, buffer_size_);
     curl_easy_setopt(easy, CURLOPT_URL, url);
     curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method);
+    curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
 
     curl_easy_setopt(easy, CURLOPT_TIMEOUT_MS, timeout_ms);
 
@@ -177,10 +178,12 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
 
         if (!stream_callback.is_none()) {
           d.stream_callback = stream_callback;
+          d.has_stream_callback = true;
         }
 
         if (!progress_callback.is_none()) {
           d.progress_callback = progress_callback;
+          d.has_progress_callback = true;
 
           curl_easy_setopt(easy, CURLOPT_XFERINFODATA, &d);
           curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 0L);
@@ -316,9 +319,10 @@ size_t RedC::header_callback(char *buffer, size_t size, size_t nitems, Data *cli
 
 size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                curl_off_t ulnow) {
-  if (!clientp->progress_callback.is_none()) {
+  if (clientp->has_progress_callback) {
     try {
-      acq_gil gil;
+      acq_gil
+          gil;  //TODO: this sometimes hangs on exit, which lead to other functions to block such as curl_multi_perform and worker_loop never exit
       clientp->progress_callback(dltotal, dlnow, ultotal, ulnow);
     } catch (const std::exception &e) {
       std::cerr << "Error in progress_callback: " << e.what() << std::endl;
@@ -331,7 +335,7 @@ size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal, curl_off_t dln
 size_t RedC::write_callback(char *data, size_t size, size_t nmemb, Data *clientp) {
   size_t total_size = size * nmemb;
 
-  if (!clientp->stream_callback.is_none()) {
+  if (clientp->has_stream_callback) {
     try {
       acq_gil gil;
       clientp->stream_callback(py_bytes(data, total_size), total_size);

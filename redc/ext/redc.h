@@ -38,6 +38,9 @@ struct Data {
   py_object stream_callback{nb::none()};
   py_object progress_callback{nb::none()};
 
+  bool has_stream_callback{false};
+  bool has_progress_callback{false};
+
   std::vector<char> headers;
   CurlSlist request_headers;
   CurlMime curl_mime_;

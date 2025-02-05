@@ -4,6 +4,7 @@ from .callbacks import StreamCallback, ProgressCallback
 from .redc_ext import RedC
 from .response import Response
 from .utils import json_dumps, parse_base_url
+import asyncio
 
 
 class Client:
@@ -81,6 +82,7 @@ class Client:
         self.__timeout = timeout
         self.__ca_cert_path = ca_cert_path if isinstance(ca_cert_path, str) else ""
         self.__json_encoder = json_encoder
+        self.__loop = asyncio.get_event_loop()
         self.__redc_ext = RedC(buffer_size)
 
     async def __aenter__(self):
@@ -768,4 +770,5 @@ class Client:
         This method must be called when the client is no longer needed to avoid memory leaks
         or unexpected behavior
         """
-        self.__redc_ext.close()
+
+        return await self.__loop.run_in_executor(None, self.__redc_ext.close)
