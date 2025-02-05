@@ -3,8 +3,10 @@ from urllib.parse import urlencode
 from .callbacks import StreamCallback, ProgressCallback
 from .redc_ext import RedC
 from .response import Response
-from .utils import json_dumps, parse_base_url
+from .utils import json_dumps, parse_base_url, Headers
+
 import asyncio
+import redc
 
 
 class Client:
@@ -78,12 +80,14 @@ class Client:
         self.__base_url = (
             parse_base_url(base_url) if isinstance(base_url, str) else None
         )
-        self.__default_headers = headers if isinstance(headers, dict) else {}
+        self.__default_headers = Headers(headers if isinstance(headers, dict) else {})
         self.__timeout = timeout
         self.__ca_cert_path = ca_cert_path if isinstance(ca_cert_path, str) else ""
         self.__json_encoder = json_encoder
         self.__loop = asyncio.get_event_loop()
         self.__redc_ext = RedC(buffer_size)
+
+        self.__set_default_headers()
 
     async def __aenter__(self):
         return self
@@ -100,6 +104,12 @@ class Client:
         """
 
         return self.__redc_ext.is_running()
+
+    @property
+    def default_headers(self):
+        """Returns default headers that are set on all requests"""
+
+        return self.__default_headers
 
     async def request(
         self,
@@ -364,6 +374,7 @@ class Client:
         Returns:
             :class:`redc.Response`
         """
+
         return await self.request(
             method="HEAD",
             url=url,
@@ -447,6 +458,7 @@ class Client:
         Returns:
             :class:`redc.Response`
         """
+
         return await self.request(
             method="POST",
             url=url,
@@ -536,6 +548,7 @@ class Client:
         Returns:
             :class:`redc.Response`
         """
+
         return await self.request(
             method="PUT",
             url=url,
@@ -695,6 +708,7 @@ class Client:
         Returns:
             :class:`redc.Response`
         """
+
         return await self.request(
             method="DELETE",
             url=url,
@@ -752,6 +766,7 @@ class Client:
         Returns:
             :class:`redc.Response`
         """
+
         return await self.request(
             method="OPTIONS",
             url=url,
@@ -772,3 +787,10 @@ class Client:
         """
 
         return await self.__loop.run_in_executor(None, self.__redc_ext.close)
+
+    def __set_default_headers(self):
+        if "user-agent" not in self.__default_headers:
+            self.__default_headers["user-agent"] = f"redc/{redc.__version__}"
+
+        if "connection" not in self.__default_headers:
+            self.__default_headers["connection"] = "keep-alive"
