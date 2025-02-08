@@ -9,7 +9,8 @@
 ## Features
 
 - **Asynchronous by Design**: Built with `asyncio` for non-blocking HTTP requests
-- **curl Backend**: Leverages the speed and reliability of libcurl for HTTP operations
+- **HTTP/2 Support**: Fully compatible with `HTTP/2` for faster and more efficient communication
+- **curl Backend**: Leverages the speed and reliability of curl for HTTP operations
 - **Streaming Support**: Stream large responses with ease using callback functions
 - **Proxy Support**: Easily configure proxies for your requests
 
