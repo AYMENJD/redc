@@ -30,8 +30,8 @@ jobs:
 
     - name: Build wheels
       run: |
-        python -m cibuildwheel .
         python -m build --sdist
+        python -m cibuildwheel .
         mv ./wheelhouse/*.whl dist/
         ls dist/
 
