@@ -157,11 +157,7 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
       curl_easy_setopt(easy, CURLOPT_HTTPHEADER, slist_headers.slist);
     }
 
-    py_object future;
-    {
-      acq_gil gil;
-      future = loop_.attr("create_future")();
-    }
+    py_object future{loop_.attr("create_future")()};
 
     {
       std::unique_lock<std::mutex> lock(mutex_);
@@ -292,11 +288,9 @@ void RedC::worker_loop() {
 
 void RedC::cleanup() {
   std::unique_lock<std::mutex> lock(mutex_);
+  acq_gil gil;
   for (auto &[easy, data] : transfers_) {
-    {
-      acq_gil gil;
-      call_soon_threadsafe_(data.future.attr("cancel"));
-    }
+    call_soon_threadsafe_(data.future.attr("cancel"));
 
     curl_multi_remove_handle(multi_handle_, easy);
     curl_easy_cleanup(easy);
@@ -321,8 +315,7 @@ size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal, curl_off_t dln
                                curl_off_t ulnow) {
   if (clientp->has_progress_callback) {
     try {
-      acq_gil
-          gil;  //TODO: this sometimes hangs on exit, which lead to other functions to block such as curl_multi_perform and worker_loop never exit
+      acq_gil gil;
       clientp->progress_callback(dltotal, dlnow, ultotal, ulnow);
     } catch (const std::exception &e) {
       std::cerr << "Error in progress_callback: " << e.what() << std::endl;
@@ -358,5 +351,5 @@ NB_MODULE(redc_ext, m) {
            arg("connect_timeout_ms") = 0, arg("allow_redirect") = true, arg("proxy_url") = "", arg("verify") = true,
            arg("ca_cert_path") = "", arg("stream_callback") = nb::none(), arg("progress_callback") = nb::none(),
            arg("verbose") = false)
-      .def("close", &RedC::close);
+      .def("close", &RedC::close, nb::call_guard<nb::gil_scoped_release>());
 }
