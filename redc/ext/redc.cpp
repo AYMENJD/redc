@@ -1,5 +1,6 @@
 #include "redc.h"
 #include "utils/curl_utils.h"
+#include "utils/memoryview.h"
 #include <iostream>
 #include <stdexcept>
 
@@ -51,11 +52,11 @@ void RedC::close() {
   }
 }
 
-py_object RedC::request(const char *method, const char *url, const char *raw_data, const py_object &data,
-                        const py_object &files, const py_object &headers, const long &timeout_ms,
-                        const long &connect_timeout_ms, const bool &allow_redirect, const char *proxy_url,
-                        const bool &verify, const char *ca_cert_path, const py_object &stream_callback,
-                        const py_object &progress_callback, const bool &verbose) {
+py_object RedC::request(const char *method, const char *url, const char *raw_data, const py_object &file_stream,
+                        const long &file_size, const py_object &data, const py_object &files, const py_object &headers,
+                        const long &timeout_ms, const long &connect_timeout_ms, const bool &allow_redirect,
+                        const char *proxy_url, const bool &verify, const char *ca_cert_path,
+                        const py_object &stream_callback, const py_object &progress_callback, const bool &verbose) {
   CHECK_RUNNING();
 
   if (isNullOrEmpty(method) || isNullOrEmpty(url)) {
@@ -169,8 +170,18 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
       d.curl_mime_ = std::move(curl_mime_);
 
       curl_easy_setopt(easy, CURLOPT_HEADERDATA, &d);
+
       if (!is_nobody) {
         curl_easy_setopt(easy, CURLOPT_WRITEDATA, &d);
+
+        if (!file_stream.is_none()) {
+          d.file_stream = file_stream;
+
+          curl_easy_setopt(easy, CURLOPT_UPLOAD, 1L);
+          curl_easy_setopt(easy, CURLOPT_READDATA, &d);
+          curl_easy_setopt(easy, CURLOPT_READFUNCTION, &RedC::read_callback);
+          curl_easy_setopt(easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_size);
+        }
 
         if (!stream_callback.is_none()) {
           d.stream_callback = stream_callback;
@@ -304,6 +315,15 @@ void RedC::CHECK_RUNNING() {
   }
 }
 
+size_t RedC::read_callback(char *buffer, size_t size, size_t nitems, Data *clientp) {
+  acq_gil gil;
+
+  auto memview = nb::memoryview::from_memory(buffer, size * nitems);
+  auto result = clientp->file_stream.attr("readinto")(memview);
+
+  return nb::cast<curl_off_t>(result);
+}
+
 size_t RedC::header_callback(char *buffer, size_t size, size_t nitems, Data *clientp) {
   size_t total_size = size * nitems;
   clientp->headers.insert(clientp->headers.end(), buffer, buffer + total_size);
@@ -346,10 +366,10 @@ NB_MODULE(redc_ext, m) {
   nb::class_<RedC>(m, "RedC")
       .def(nb::init<const long &>())
       .def("is_running", &RedC::is_running)
-      .def("request", &RedC::request, arg("method"), arg("url"), arg("raw_data") = "", arg("data") = nb::none(),
-           arg("files") = nb::none(), arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
-           arg("connect_timeout_ms") = 0, arg("allow_redirect") = true, arg("proxy_url") = "", arg("verify") = true,
-           arg("ca_cert_path") = "", arg("stream_callback") = nb::none(), arg("progress_callback") = nb::none(),
-           arg("verbose") = false)
+      .def("request", &RedC::request, arg("method"), arg("url"), arg("raw_data") = "", arg("file_stream") = nb::none(),
+           arg("file_size") = 0, arg("data") = nb::none(), arg("files") = nb::none(), arg("headers") = nb::none(),
+           arg("timeout_ms") = 60 * 1000, arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,
+           arg("proxy_url") = "", arg("verify") = true, arg("ca_cert_path") = "", arg("stream_callback") = nb::none(),
+           arg("progress_callback") = nb::none(), arg("verbose") = false)
       .def("close", &RedC::close, nb::call_guard<nb::gil_scoped_release>());
 }

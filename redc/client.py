@@ -1,12 +1,13 @@
+import asyncio
+from typing import BinaryIO, Union
 from urllib.parse import urlencode
 
-from .callbacks import StreamCallback, ProgressCallback
+import redc
+
+from .callbacks import ProgressCallback, StreamCallback
 from .redc_ext import RedC
 from .response import Response
-from .utils import json_dumps, parse_base_url, Headers
-
-import asyncio
-import redc
+from .utils import Headers, json_dumps, parse_base_url, get_fsize
 
 
 class Client:
@@ -117,7 +118,7 @@ class Client:
         url: str,
         form: dict = None,
         json: dict = None,
-        data: dict[str, str] = None,
+        data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
         timeout: tuple = None,
@@ -149,8 +150,8 @@ class Client:
             json (``dict``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
-            data (``dict[str, str]``, *optional*):
-                Multipart form data to send in the request body. Default is ``None``
+            data (``dict[str, str]`` || ``BinaryIO``, *optional*):
+                Multipart form data dict or a binary file-like object (requires ``readinto``). Default is ``None``
 
             files (``dict[str, str]``, *optional*):
                 A dictionary specifying files to upload as part of a multipart form request, ``key`` is the form field and ``value`` is string containing the file path
@@ -211,9 +212,17 @@ class Client:
             else:
                 raise TypeError("json must be of type dict[str, str]")
 
+        file_stream = None
+        file_size = 0
         if data is not None:
-            if not isinstance(data, dict):
-                raise TypeError("data must be of type dict[str, str]")
+            if hasattr(data, "readinto"):
+                file_stream = data
+                file_size = get_fsize(file_stream)
+                data = None
+            elif not isinstance(data, dict):
+                raise TypeError(
+                    "data must be either dict[str, str] or a file-like object with readinto method"
+                )
 
         if files is not None:
             if not isinstance(files, dict):
@@ -247,6 +256,8 @@ class Client:
                     method=method,
                     url=url,
                     raw_data=form or json or "",
+                    file_stream=file_stream,
+                    file_size=file_size,
                     data=data,
                     files=files,
                     headers=headers,
@@ -391,7 +402,7 @@ class Client:
         url: str,
         form: dict = None,
         json: dict = None,
-        data: dict[str, str] = None,
+        data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
         timeout: tuple = None,
@@ -424,8 +435,8 @@ class Client:
             json (``dict``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
-            data (``dict[str, str]``, *optional*):
-                Multipart form data to send in the request body. Default is ``None``
+            data (``dict[str, str]`` || ``BinaryIO``, *optional*):
+                Multipart form data dict or a binary file-like object (requires ``readinto``). Default is ``None``
 
             files (``dict[str, str]``, *optional*):
                 A dictionary specifying files to upload as part of a multipart form request, ``key`` is the form field and ``value`` is string containing the file path
@@ -481,7 +492,7 @@ class Client:
         url: str,
         form: dict = None,
         json: dict = None,
-        data: dict[str, str] = None,
+        data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
         timeout: tuple = None,
@@ -514,8 +525,8 @@ class Client:
             json (``dict``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
-            data (``dict[str, str]``, *optional*):
-                Multipart form data to send in the request body. Default is ``None``
+            data (``dict[str, str]`` || ``BinaryIO``, *optional*):
+                Multipart form data dict or a binary file-like object (requires ``readinto``). Default is ``None``
 
             files (``dict[str, str]``, *optional*):
                 A dictionary specifying files to upload as part of a multipart form request, ``key`` is the form field and ``value`` is string containing the file path
@@ -571,7 +582,7 @@ class Client:
         url: str,
         form: dict = None,
         json: dict = None,
-        data: dict[str, str] = None,
+        data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
         timeout: tuple = None,
@@ -604,8 +615,8 @@ class Client:
             json (``dict``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
-            data (``dict[str, str]``, *optional*):
-                Multipart form data to send in the request body. Default is ``None``
+            data (``dict[str, str]`` || ``BinaryIO``, *optional*):
+                Multipart form data dict or a binary file-like object (requires ``readinto``). Default is ``None``
 
             files (``dict[str, str]``, *optional*):
                 A dictionary specifying files to upload as part of a multipart form request, ``key`` is the form field and ``value`` is string containing the file path
