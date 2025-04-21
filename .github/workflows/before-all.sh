@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-CURL_VERSION="8.12.1"
+CURL_VERSION="8.13.0"
 
 # deps
 yum install wget gcc make libpsl-devel libidn-devel zlib-devel libnghttp2-devel perl-IPC-Cmd -y
