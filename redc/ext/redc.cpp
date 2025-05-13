@@ -127,8 +127,8 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
 
         for (auto const &it : dict_obj) {
           curl_mimepart *part = curl_mime_addpart(curl_mime_.mime);
-          curl_mime_name(part, nb::str(it.first).c_str());
           curl_mime_data(part, nb::str(it.second).c_str(), CURL_ZERO_TERMINATED);
+          curl_mime_name(part, nb::str(it.first).c_str());
         }
       }
 

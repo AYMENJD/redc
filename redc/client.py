@@ -240,7 +240,10 @@ class Client:
 
         if headers is not None:
             if isinstance(headers, dict):
-                headers = {**self.__default_headers, **headers}
+                headers = {
+                    **self.__default_headers,
+                    **{k.lower(): v for k, v in headers.items()},
+                }
                 headers = [f"{k}: {v}" for k, v in headers.items()]
             else:
                 raise TypeError("headers must be of type dict[str, str]")
