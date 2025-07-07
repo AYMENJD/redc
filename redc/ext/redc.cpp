@@ -162,41 +162,41 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
 
     {
       std::unique_lock<std::mutex> lock(mutex_);
-      auto &d = transfers_[easy];
+      auto [it, inserted] =
+          transfers_.try_emplace(easy, Data{
+                                           future,
+                                           loop_,
+                                           stream_callback,
+                                           progress_callback,
+                                           file_stream,
+                                           !stream_callback.is_none() && !is_nobody,    // has_stream_callback
+                                           !progress_callback.is_none() && !is_nobody,  // has_progress_callback
+                                           {},                                          // response headers
+                                           std::move(slist_headers),
+                                           std::move(curl_mime_),
+                                           {}  // response
+                                       });
+      auto &d = it->second;
       lock.unlock();
-
-      d.future = future;
-      d.request_headers = std::move(slist_headers);
-      d.curl_mime_ = std::move(curl_mime_);
 
       curl_easy_setopt(easy, CURLOPT_HEADERDATA, &d);
 
       if (!is_nobody) {
         curl_easy_setopt(easy, CURLOPT_WRITEDATA, &d);
 
-        if (!file_stream.is_none()) {
-          d.file_stream = file_stream;
-
-          curl_easy_setopt(easy, CURLOPT_UPLOAD, 1L);
-          curl_easy_setopt(easy, CURLOPT_READDATA, &d);
-          curl_easy_setopt(easy, CURLOPT_READFUNCTION, &RedC::read_callback);
-          curl_easy_setopt(easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_size);
-        }
-
-        if (!stream_callback.is_none()) {
-          d.stream_callback = stream_callback;
-          d.has_stream_callback = true;
-        }
-
         if (!progress_callback.is_none()) {
-          d.progress_callback = progress_callback;
-          d.has_progress_callback = true;
-
           curl_easy_setopt(easy, CURLOPT_XFERINFODATA, &d);
           curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 0L);
           curl_easy_setopt(easy, CURLOPT_XFERINFOFUNCTION, &RedC::progress_callback);
         } else {
           curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
+        }
+
+        if (!file_stream.is_none()) {
+          curl_easy_setopt(easy, CURLOPT_UPLOAD, 1L);
+          curl_easy_setopt(easy, CURLOPT_READDATA, &d);
+          curl_easy_setopt(easy, CURLOPT_READFUNCTION, &RedC::read_callback);
+          curl_easy_setopt(easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t)file_size);
         }
       }
     }
@@ -218,17 +218,15 @@ void RedC::worker_loop() {
       CURLMcode res = curl_multi_add_handle(multi_handle_, e);
       if (res != CURLM_OK) {
         std::unique_lock<std::mutex> lock(mutex_);
-        auto it = transfers_.find(e);
-        if (it != transfers_.end()) {
-          Data data = std::move(it->second);
-          transfers_.erase(it);
-          lock.unlock();
-          {
-            acq_gil gil;
-            call_soon_threadsafe_(nb::cpp_function([data = std::move(data), res]() {
-              data.future.attr("set_result")(nb::make_tuple(-1, NULL, NULL, (int)res, curl_multi_strerror(res)));
-            }));
-          }
+        auto node = transfers_.extract(e);
+        lock.unlock();
+
+        if (!node.empty()) {
+          Data &data = node.mapped();
+          acq_gil gil;
+          call_soon_threadsafe_(nb::cpp_function([data = std::move(data), res]() {
+            data.future.attr("set_result")(nb::make_tuple(-1, NULL, NULL, (int)res, curl_multi_strerror(res)));
+          }));
         }
         curl_easy_cleanup(e);
       }
@@ -248,18 +246,16 @@ void RedC::worker_loop() {
     while ((msg = curl_multi_info_read(multi_handle_, &msgs_left))) {
       if (msg->msg == CURLMSG_DONE) {
         std::unique_lock<std::mutex> lock(mutex_);
-        auto it = transfers_.find(msg->easy_handle);
-        if (it != transfers_.end()) {
-          Data data = std::move(it->second);
-          transfers_.erase(it);
-          lock.unlock();
+        auto node = transfers_.extract(msg->easy_handle);
+        lock.unlock();
 
-          {
-            acq_gil gil;
+        if (!node.empty()) {
+          Data &data = node.mapped();
+          acq_gil gil;
 
-            CURLcode res = msg->data.result;
+          CURLcode res = msg->data.result;
 
-            /*
+          /*
             * Result is allways Tuple:
 
             * 0: HTTP response status code.
@@ -274,24 +270,23 @@ void RedC::worker_loop() {
             *
             * 4: cURL error message string; can be null
             */
-            py_object result;
-            if (res == CURLE_OK) {
-              short status_code = 0;
-              curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &status_code);
-              result = nb::make_tuple(status_code, py_bytes(data.headers.data(), data.headers.size()),
-                                      py_bytes(data.response.data(), data.response.size()), (int)res, NULL);
-            } else {
-              result = nb::make_tuple(-1, NULL, NULL, (int)res, curl_easy_strerror(res));
-            }
-
-            call_soon_threadsafe_(nb::cpp_function([data = std::move(data), result = std::move(result)]() {
-              data.future.attr("set_result")(std::move(result));
-            }));
+          py_object result;
+          if (res == CURLE_OK) {
+            short status_code = 0;
+            curl_easy_getinfo(msg->easy_handle, CURLINFO_RESPONSE_CODE, &status_code);
+            result = nb::make_tuple(status_code, py_bytes(data.headers.data(), data.headers.size()),
+                                    py_bytes(data.response.data(), data.response.size()), (int)res, NULL);
+          } else {
+            result = nb::make_tuple(-1, NULL, NULL, (int)res, curl_easy_strerror(res));
           }
 
-          curl_multi_remove_handle(multi_handle_, msg->easy_handle);
-          curl_easy_cleanup(msg->easy_handle);
+          call_soon_threadsafe_(nb::cpp_function([data = std::move(data), result = std::move(result)]() {
+            data.future.attr("set_result")(std::move(result));
+          }));
         }
+
+        curl_multi_remove_handle(multi_handle_, msg->easy_handle);
+        curl_easy_cleanup(msg->easy_handle);
       }
     }
   }
@@ -300,13 +295,22 @@ void RedC::worker_loop() {
 void RedC::cleanup() {
   std::unique_lock<std::mutex> lock(mutex_);
   acq_gil gil;
-  for (auto &[easy, data] : transfers_) {
-    call_soon_threadsafe_(data.future.attr("cancel"));
 
+  std::vector<py_object> futures;
+  futures.reserve(transfers_.size());
+
+  for (auto &[easy, data] : transfers_) {
+    futures.push_back(data.future);
     curl_multi_remove_handle(multi_handle_, easy);
     curl_easy_cleanup(easy);
   }
+
   transfers_.clear();
+  lock.unlock();
+
+  for (auto &future : futures) {
+    call_soon_threadsafe_(future.attr("cancel"));
+  }
 }
 
 void RedC::CHECK_RUNNING() {

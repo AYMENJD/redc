@@ -33,6 +33,14 @@ bool isNullOrEmpty(const char *str) {
 }
 
 struct Data {
+  Data() = default;
+
+  Data(const Data &) = delete;
+  Data &operator=(const Data &) = delete;
+
+  Data(Data &&) = default;
+  Data &operator=(Data &&) = default;
+
   py_object future;
   py_object loop;
   py_object stream_callback{nb::none()};
