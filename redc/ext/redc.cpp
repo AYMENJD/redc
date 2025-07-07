@@ -163,19 +163,19 @@ py_object RedC::request(const char *method, const char *url, const char *raw_dat
     {
       std::unique_lock<std::mutex> lock(mutex_);
       auto [it, inserted] =
-          transfers_.try_emplace(easy, Data{
-                                           future,
-                                           loop_,
-                                           stream_callback,
-                                           progress_callback,
-                                           file_stream,
-                                           !stream_callback.is_none() && !is_nobody,    // has_stream_callback
-                                           !progress_callback.is_none() && !is_nobody,  // has_progress_callback
-                                           {},                                          // response headers
-                                           std::move(slist_headers),
-                                           std::move(curl_mime_),
-                                           {}  // response
-                                       });
+          transfers_.emplace(easy, Data{
+                                       future,
+                                       loop_,
+                                       stream_callback,
+                                       progress_callback,
+                                       file_stream,
+                                       !stream_callback.is_none() && !is_nobody,    // has_stream_callback
+                                       !progress_callback.is_none() && !is_nobody,  // has_progress_callback
+                                       {},                                          // response headers
+                                       std::move(slist_headers),
+                                       std::move(curl_mime_),
+                                       {}  // response
+                                   });
       auto &d = it->second;
       lock.unlock();
 

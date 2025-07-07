@@ -3,9 +3,9 @@
 
 #include <atomic>
 #include <cstring>
-#include <map>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 #include <vector>
 
 #include <curl/curl.h>
@@ -82,7 +82,7 @@ class RedC {
 
   CURLM *multi_handle_;
 
-  std::map<CURL *, Data> transfers_;
+  std::unordered_map<CURL *, Data> transfers_;
   std::mutex mutex_;
   std::thread worker_thread_;
   std::atomic<bool> running_{false};
