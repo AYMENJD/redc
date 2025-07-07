@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "redc"
-version = "0.1.5"
+version = "0.1.6"
 description = "RedC is a high-performance, asynchronous HTTP client library for Python, built on top of the powerful curl library"
 readme = "README.md"
 authors = [{ name = "AYMEN Mohammed", email = "let.me.code.safe@gmail.com" }]
