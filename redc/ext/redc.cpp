@@ -362,8 +362,29 @@ size_t RedC::write_callback(char *data, size_t size, size_t nmemb, Data *clientp
   return total_size;
 }
 
+int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
+  Py_VISIT(Py_TYPE(self));
+
+  if (!nb::inst_ready(self))
+    return 0;
+
+  RedC *me = nb::inst_ptr<RedC>(self);
+  Py_VISIT(me->loop_.ptr());
+  Py_VISIT(me->call_soon_threadsafe_.ptr());
+  return 0;
+}
+
+int redc_tp_clear(PyObject *self) {
+  RedC *c = nb::inst_ptr<RedC>(self);
+  c->loop_ = {};
+  c->call_soon_threadsafe_ = {};
+  return 0;
+}
+
+PyType_Slot slots[] = {{Py_tp_traverse, (void *)redc_tp_traverse}, {Py_tp_clear, (void *)redc_tp_clear}, {0, 0}};
+
 NB_MODULE(redc_ext, m) {
-  nb::class_<RedC>(m, "RedC")
+  nb::class_<RedC>(m, "RedC", nb::type_slots(slots))
       .def(nb::init<const long &>())
       .def("is_running", &RedC::is_running)
       .def("request", &RedC::request, arg("method"), arg("url"), arg("raw_data") = "", arg("file_stream") = nb::none(),

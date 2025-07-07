@@ -90,6 +90,9 @@ class RedC {
   static size_t progress_callback(Data *clientp, curl_off_t dltotal, curl_off_t dlnow, curl_off_t ultotal,
                                   curl_off_t ulnow);
   static size_t write_callback(char *data, size_t size, size_t nmemb, Data *clientp);
+
+  friend int redc_tp_traverse(PyObject *, visitproc, void *);
+  friend int redc_tp_clear(PyObject *);
 };
 
 #endif  // REDC_H
