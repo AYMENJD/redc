@@ -41,6 +41,23 @@ struct Data {
   Data(Data &&) = default;
   Data &operator=(Data &&) = default;
 
+  void clear() {
+    future = {};
+    loop = {};
+    stream_callback = {};
+    progress_callback = {};
+    file_stream = {};
+    headers.clear();
+    response.clear();
+    request_headers = {};
+    curl_mime_ = {};
+  }
+
+  void clear() const {
+    Data &mutable_this = const_cast<Data &>(*this);
+    mutable_this.clear();
+  }
+
   py_object future;
   py_object loop;
   py_object stream_callback{nb::none()};

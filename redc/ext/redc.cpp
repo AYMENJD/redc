@@ -226,6 +226,7 @@ void RedC::worker_loop() {
           acq_gil gil;
           call_soon_threadsafe_(nb::cpp_function([data = std::move(data), res]() {
             data.future.attr("set_result")(nb::make_tuple(-1, NULL, NULL, (int)res, curl_multi_strerror(res)));
+            data.clear();
           }));
         }
         curl_easy_cleanup(e);
@@ -282,6 +283,7 @@ void RedC::worker_loop() {
 
           call_soon_threadsafe_(nb::cpp_function([data = std::move(data), result = std::move(result)]() {
             data.future.attr("set_result")(std::move(result));
+            data.clear();
           }));
         }
 
