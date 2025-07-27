@@ -15,7 +15,7 @@ __all__ = [
     "Response",
 ]
 
-__version__ = "0.1.8"
+__version__ = "0.1.9"
 __copyright__ = "Copyright (c) 2025 RedC, AYMENJD"
 __license__ = "MIT License"
 
