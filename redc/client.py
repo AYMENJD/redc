@@ -117,7 +117,7 @@ class Client:
         method: str,
         url: str,
         form: dict = None,
-        json: dict = None,
+        json=None,
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
@@ -198,19 +198,13 @@ class Client:
             progress_callback = progress_callback.callback
 
         if form is not None:
-            if isinstance(form, dict):
-                form = urlencode(form)
-            else:
-                raise TypeError("form must be of type dict[str, str]")
+            form = urlencode(form)
 
         if json is not None:
-            if isinstance(json, dict):
-                json = self.__json_encoder(json)
-                if headers is None:
-                    headers = {}
-                headers["Content-Type"] = "application/json"
-            else:
-                raise TypeError("json must be of type dict[str, str]")
+            json = self.__json_encoder(json)
+            if headers is None:
+                headers = {}
+            headers["Content-Type"] = "application/json"
 
         file_stream = None
         file_size = 0
@@ -404,7 +398,7 @@ class Client:
         self,
         url: str,
         form: dict = None,
-        json: dict = None,
+        json=None,
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
@@ -435,7 +429,7 @@ class Client:
             form (``dict``, *optional*):
                 Form data to send in the request body. Default is ``None``
 
-            json (``dict``, *optional*):
+            json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
             data (``dict[str, str]`` || ``BinaryIO``, *optional*):
@@ -494,7 +488,7 @@ class Client:
         self,
         url: str,
         form: dict = None,
-        json: dict = None,
+        json=None,
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
@@ -525,7 +519,7 @@ class Client:
             form (``dict``, *optional*):
                 Form data to send in the request body. Default is ``None``
 
-            json (``dict``, *optional*):
+            json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
             data (``dict[str, str]`` || ``BinaryIO``, *optional*):
@@ -584,7 +578,7 @@ class Client:
         self,
         url: str,
         form: dict = None,
-        json: dict = None,
+        json=None,
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
@@ -615,7 +609,7 @@ class Client:
             form (``dict``, *optional*):
                 Form data to send in the request body. Default is ``None``
 
-            json (``dict``, *optional*):
+            json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
             data (``dict[str, str]`` || ``BinaryIO``, *optional*):
