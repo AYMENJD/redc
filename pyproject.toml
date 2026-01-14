@@ -4,7 +4,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "redc"
-version = "0.1.9"
+dynamic = ["version"]
 description = "RedC is a high-performance, asynchronous HTTP client library for Python, built on top of the powerful curl library"
 readme = "README.md"
 authors = [{ name = "AYMEN Mohammed", email = "let.me.code.safe@gmail.com" }]
@@ -19,6 +19,10 @@ Tracker = "https://github.com/AYMENJD/redc/issues"
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"
 wheel.py-api = "cp312"
+
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "redc/_version.py"
 
 [tool.cibuildwheel]
 build-verbosity = 1

@@ -4,6 +4,7 @@ from .client import Client
 from .codes import HTTPStatus
 from .exceptions import HTTPError
 from .response import Response
+from ._version import __version__, __copyright__, __license__
 
 __all__ = [
     "utils",
@@ -13,10 +14,7 @@ __all__ = [
     "HTTPStatus",
     "HTTPError",
     "Response",
+    "__version__",
+    "__copyright__",
+    "__license__",
 ]
-
-__version__ = "0.1.10"
-__copyright__ = "Copyright (c) 2025-2026 RedC, AYMENJD"
-__license__ = "MIT License"
-
-VERSION = __version__
