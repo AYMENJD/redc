@@ -6,7 +6,7 @@ on:
       - "main"
 
     paths:
-      - "redc/__init__.py"
+      - "redc/_version.py"
 
 jobs:
   build-and-publish:
