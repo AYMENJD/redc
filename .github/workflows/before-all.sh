@@ -33,7 +33,7 @@ rm zstd.tar.gz
 mv zstd-$ZSTD_VERSION zstd
 
 cd zstd/
-cmake -S . -B build-cmake
+cmake -S build/cmake -B build-cmake
 cmake --build build-cmake -j
 cmake --install build-cmake
 ldconfig
