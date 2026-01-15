@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
 CURL_VERSION="8.18.0"
 OPENSSL_VERSION="3.6.0"
@@ -65,6 +66,11 @@ make install_sw
 ldconfig
 cd .. && rm -rf openssl
 
+export OPENSSL_PREFIX=/usr/local
+export PKG_CONFIG_PATH="$OPENSSL_PREFIX/lib64/pkgconfig:$OPENSSL_PREFIX/lib/pkgconfig"
+export CPPFLAGS="-I$OPENSSL_PREFIX/include"
+export LDFLAGS="-Wl,-rpath,$OPENSSL_PREFIX/lib64 -L$OPENSSL_PREFIX/lib64"
+
 # nghttp2 from source
 wget -O nghttp2.tar.gz https://github.com/nghttp2/nghttp2/releases/download/v$NGHTTP2_VERSION/nghttp2-$NGHTTP2_VERSION.tar.gz
 tar -xzvf nghttp2.tar.gz
@@ -87,7 +93,7 @@ mv nghttp3-$NGHTTP3_VERSION nghttp3
 
 cd nghttp3
 autoreconf -fi
-./configure --enable-lib-only --with-openssl
+./configure --enable-lib-only
 make -j100
 make install
 ldconfig
