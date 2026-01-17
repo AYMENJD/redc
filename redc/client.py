@@ -2,12 +2,14 @@ import asyncio
 from typing import BinaryIO, Union
 from urllib.parse import urlencode
 
+import trustifi
+
 import redc
 
 from .callbacks import ProgressCallback, StreamCallback
 from .redc_ext import RedC
 from .response import Response
-from .utils import Headers, json_dumps, parse_base_url, get_fsize
+from .utils import Headers, get_fsize, json_dumps, parse_base_url
 
 
 class Client:
@@ -47,7 +49,7 @@ class Client:
                 A tuple of `(total_timeout, connect_timeout)` in seconds to include in every request. Default is ``(30.0, 0.0)``
 
             ca_cert_path (``str``, *optional*):
-                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
 
             force_verbose (``bool``, *optional*):
                 Force verbose output for all requests. Default is ``None``
@@ -83,7 +85,9 @@ class Client:
         )
         self.__default_headers = Headers(headers if isinstance(headers, dict) else {})
         self.__timeout = timeout
-        self.__ca_cert_path = ca_cert_path if isinstance(ca_cert_path, str) else ""
+        self.__ca_cert_path = (
+            ca_cert_path if isinstance(ca_cert_path, str) else trustifi.where()
+        )
         self.__json_encoder = json_encoder
         self.__loop = asyncio.get_event_loop()
         self.__redc_ext = RedC(buffer_size)

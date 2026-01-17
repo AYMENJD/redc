@@ -131,7 +131,7 @@ cd curl
   --enable-symbol-hiding \
   --without-ca-bundle \
   --without-ca-path \
-  --with-ca-fallback \
+  --without-ca-fallback \
   --with-openssl \
   --with-ngtcp2 \
   --with-nghttp2 \
