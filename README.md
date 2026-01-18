@@ -8,11 +8,11 @@
 
 ## Features
 
--   **Asynchronous by Design**: Built with `asyncio` for non-blocking HTTP requests
--   **HTTP/2 Support**: Fully compatible with `HTTP/2` for faster and more efficient communication
--   **curl Backend**: Leverages the speed and reliability of curl for HTTP operations
--   **Streaming Support**: Stream large responses with ease using callback functions
--   **Proxy Support**: Easily configure proxies for your requests
+- **Protocols**: Supports **HTTP/1.1**, **HTTP/2**, and **HTTP/3**
+- **curl-powered**: Built on top of **libcurl** for **performance and reliability**
+- **Streaming**: Efficient handling of large responses
+- **Proxying**: Simple and flexible proxy configuration
+- **Google CA Trust**: Uses [**trustifi**](https://github.com/AYMENJD/trustifi) as the default TLS trust store
 
 ## Installation
 
