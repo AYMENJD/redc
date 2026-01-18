@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # deps
-brew install wget cmake autoconf automake libtool pkg-config
+brew install cmake autoconf automake libtool
 
 export LDFLAGS="-L/usr/local/lib -Wl,-rpath,/usr/local/lib"
 export CPPFLAGS="-I/usr/local/include"
