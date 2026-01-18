@@ -171,7 +171,7 @@ class Client:
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
-                The proxy URL to use for the request
+                The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
@@ -311,7 +311,7 @@ class Client:
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
-                The proxy URL to use for the request
+                The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
@@ -375,7 +375,7 @@ class Client:
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
-                The proxy URL to use for the request
+                The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
@@ -453,7 +453,7 @@ class Client:
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
-                The proxy URL to use for the request
+                The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
@@ -543,7 +543,7 @@ class Client:
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
-                The proxy URL to use for the request
+                The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
@@ -633,7 +633,7 @@ class Client:
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
-                The proxy URL to use for the request
+                The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
@@ -703,7 +703,7 @@ class Client:
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
-                The proxy URL to use for the request
+                The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
@@ -767,7 +767,7 @@ class Client:
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
-                The proxy URL to use for the request
+                The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
