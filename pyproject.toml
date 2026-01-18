@@ -30,8 +30,17 @@ build-verbosity = 1
 build = "cp39* cp310* cp311* cp312* cp313*"
 enable = ["cpython-freethreading"]
 skip = "*musllinux*"
-archs = ["x86_64"]
+archs = ["native"]
 
 [tool.cibuildwheel.linux]
-before-all = ".github/workflows/before-all.sh"
+before-all = "bash .github/workflows/scripts/before-all-linux.sh"
 manylinux-x86_64-image = "manylinux2014"
+manylinux-aarch64-image = "manylinux2014"
+
+[tool.cibuildwheel.windows]
+before-all = "bash .github/workflows/scripts/before-all-windows.sh"
+before-build = "pip install delvewheel"
+repair-wheel-command = "delvewheel repair -w {dest_dir} {wheel}"
+
+[tool.cibuildwheel.macos]
+before-all = "bash .github/workflows/scripts/before-all-macos.sh"

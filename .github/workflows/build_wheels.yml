@@ -9,31 +9,192 @@ on:
       - "redc/_version.py"
 
 jobs:
-  build-and-publish:
-    runs-on: tenki-standard-autoscale
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      psl: ${{ steps.vars.outputs.psl }}
+      curl: ${{ steps.vars.outputs.curl }}
+      brotli: ${{ steps.vars.outputs.brotli }}
+      zstd: ${{ steps.vars.outputs.zstd }}
+      zlib: ${{ steps.vars.outputs.zlib }}
+      openssl: ${{ steps.vars.outputs.openssl }}
+      nghttp2: ${{ steps.vars.outputs.nghttp2 }}
+      nghttp3: ${{ steps.vars.outputs.nghttp3 }}
+      ngtcp2: ${{ steps.vars.outputs.ngtcp2 }}
+      cares: ${{ steps.vars.outputs.cares }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up variables
+        id: vars
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          gh_api() {
+            curl -s \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$1/releases/latest"
+          }
+
+          psl=$(gh_api rockdaboot/libpsl | jq -r .tag_name | sed 's/^v//')
+          brotli=$(gh_api google/brotli | jq -r .tag_name | sed 's/^v//')
+          zstd=$(gh_api facebook/zstd | jq -r .tag_name | sed 's/^v//')
+          zlib=$(gh_api madler/zlib | jq -r .tag_name | sed 's/^v//')
+          nghttp2=$(gh_api nghttp2/nghttp2 | jq -r .tag_name | sed 's/^v//')
+          nghttp3=$(gh_api ngtcp2/nghttp3 | jq -r .tag_name | sed 's/^v//')
+          ngtcp2=$(gh_api ngtcp2/ngtcp2 | jq -r .tag_name | sed 's/^v//')
+          cares=$(gh_api c-ares/c-ares | jq -r .tag_name | sed 's/^v//')
+          curlver=$(sed -n 's/^CURL_VERSION *= *"\([^"]*\)".*/\1/p' redc/_version.py)
+          openssl=$(gh_api openssl/openssl | jq -r .tag_name | sed 's/^openssl-//')
+
+          echo "psl=$psl" >> $GITHUB_OUTPUT
+          echo "brotli=$brotli" >> $GITHUB_OUTPUT
+          echo "zstd=$zstd" >> $GITHUB_OUTPUT
+          echo "zlib=$zlib" >> $GITHUB_OUTPUT
+          echo "openssl=$openssl" >> $GITHUB_OUTPUT
+          echo "nghttp2=$nghttp2" >> $GITHUB_OUTPUT
+          echo "nghttp3=$nghttp3" >> $GITHUB_OUTPUT
+          echo "ngtcp2=$ngtcp2" >> $GITHUB_OUTPUT
+          echo "cares=$cares" >> $GITHUB_OUTPUT
+          echo "curl=$curlver" >> $GITHUB_OUTPUT
+
+  build-linux:
+    needs: prepare
+
+    strategy:
+      matrix:
+        include:
+          - name: linux-x64
+            os: tenki-standard-autoscale
+          - name: linux-arm
+            os: ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.os }}
+
+    env:
+      CIBW_ENVIRONMENT: >
+        CURL_VERSION=${{ needs.prepare.outputs.curl }}
+        PSL_VERSION=${{ needs.prepare.outputs.psl }}
+        BROTLI_VERSION=${{ needs.prepare.outputs.brotli }}
+        ZSTD_VERSION=${{ needs.prepare.outputs.zstd }}
+        ZLIB_VERSION=${{ needs.prepare.outputs.zlib }}
+        OPENSSL_VERSION=${{ needs.prepare.outputs.openssl }}
+        NGHTTP2_VERSION=${{ needs.prepare.outputs.nghttp2 }}
+        NGHTTP3_VERSION=${{ needs.prepare.outputs.nghttp3 }}
+        NGTCP2_VERSION=${{ needs.prepare.outputs.ngtcp2 }}
+        CARES_VERSION=${{ needs.prepare.outputs.cares }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cibuildwheel
+        run: python3 -m pip install --upgrade cibuildwheel
+
+      - name: Build wheels
+        run: |
+          mkdir -p wheelhouse
+          python3 -m cibuildwheel . --output-dir wheelhouse
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.name }}
+          path: wheelhouse/*.whl
+
+  build-windows:
+    needs: prepare
+    runs-on: windows-2022
+
+    env:
+      CMAKE_PREFIX_PATH: C:/deps
+      CIBW_ENVIRONMENT: >
+        CURL_VERSION=${{ needs.prepare.outputs.curl }}
+        PSL_VERSION=${{ needs.prepare.outputs.psl }}
+        BROTLI_VERSION=${{ needs.prepare.outputs.brotli }}
+        ZSTD_VERSION=${{ needs.prepare.outputs.zstd }}
+        ZLIB_VERSION=${{ needs.prepare.outputs.zlib }}
+        OPENSSL_VERSION=${{ needs.prepare.outputs.openssl }}
+        NGHTTP2_VERSION=${{ needs.prepare.outputs.nghttp2 }}
+        NGHTTP3_VERSION=${{ needs.prepare.outputs.nghttp3 }}
+        NGTCP2_VERSION=${{ needs.prepare.outputs.ngtcp2 }}
+        CARES_VERSION=${{ needs.prepare.outputs.cares }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cibuildwheel
+        shell: bash
+        run: python3 -m pip install --upgrade cibuildwheel
+
+      - name: Append to system path
+        run: echo "C:/deps/bin" >> "$GITHUB_PATH"
+
+      - name: Build wheels
+        shell: bash
+        run: |
+
+          mkdir -p wheelhouse
+          python3 -m cibuildwheel . --output-dir wheelhouse
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-windows
+          path: wheelhouse/*.whl
+
+  build-macos:
+    needs: prepare
+    runs-on: tenki-macos-latest-small
+
+    env:
+      CIBW_ENVIRONMENT: >
+        MACOSX_DEPLOYMENT_TARGET="11.0"
+        CURL_VERSION=${{ needs.prepare.outputs.curl }}
+        PSL_VERSION=${{ needs.prepare.outputs.psl }}
+        BROTLI_VERSION=${{ needs.prepare.outputs.brotli }}
+        ZSTD_VERSION=${{ needs.prepare.outputs.zstd }}
+        ZLIB_VERSION=${{ needs.prepare.outputs.zlib }}
+        OPENSSL_VERSION=${{ needs.prepare.outputs.openssl }}
+        NGHTTP2_VERSION=${{ needs.prepare.outputs.nghttp2 }}
+        NGHTTP3_VERSION=${{ needs.prepare.outputs.nghttp3 }}
+        NGTCP2_VERSION=${{ needs.prepare.outputs.ngtcp2 }}
+        CARES_VERSION=${{ needs.prepare.outputs.cares }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cibuildwheel
+        run: python3 -m pip install --upgrade cibuildwheel
+
+      - name: Build wheels
+        run: |
+          mkdir -p wheelhouse
+          python3 -m cibuildwheel . --output-dir wheelhouse
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v6
+        with:
+          name: wheels-macos
+          path: wheelhouse/*.whl
+
+  publish:
+    needs: [prepare, build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.13.1'
+      - name: Download all wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: ./dist
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade scikit-build-core nanobind build ninja cibuildwheel auditwheel
-
-    - name: Build wheels
-      run: |
-        python -m build --sdist
-        python -m cibuildwheel .
-        mv ./wheelhouse/*.whl dist/
-        ls dist/
-
-    - name: Publish to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
