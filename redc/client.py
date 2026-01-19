@@ -21,7 +21,7 @@ class Client:
         buffer_size: int = 16384,
         headers: dict = None,
         timeout: tuple = (30.0, 0.0),
-        ca_cert_path: str = None,
+        cert: str = None,
         force_verbose: bool = None,
         raise_for_status: bool = False,
         json_encoder=json_dumps,
@@ -48,7 +48,7 @@ class Client:
             timeout (``tuple``, *optional*):
                 A tuple of `(total_timeout, connect_timeout)` in seconds to include in every request. Default is ``(30.0, 0.0)``
 
-            ca_cert_path (``str``, *optional*):
+            cert (``str``, *optional*):
                 Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
 
             force_verbose (``bool``, *optional*):
@@ -64,9 +64,7 @@ class Client:
 
         assert isinstance(base_url, (str, type(None))), "base_url must be string"
         assert isinstance(buffer_size, int), "buffer_size must be int"
-        assert isinstance(ca_cert_path, (str, type(None))), (
-            "ca_cert_path must be string"
-        )
+        assert isinstance(cert, (str, type(None))), "cert must be string"
         assert isinstance(timeout, tuple) and len(timeout) == 2, (
             "timeout must be a tuple of (total_timeout, connect_timeout)"
         )
@@ -85,9 +83,7 @@ class Client:
         )
         self.__default_headers = Headers(headers if isinstance(headers, dict) else {})
         self.__timeout = timeout
-        self.__ca_cert_path = (
-            ca_cert_path if isinstance(ca_cert_path, str) else trustifi.where()
-        )
+        self.__cert = cert if isinstance(cert, str) else trustifi.where()
         self.__json_encoder = json_encoder
         self.__loop = asyncio.get_event_loop()
         self.__redc_ext = RedC(buffer_size)
@@ -130,6 +126,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
@@ -179,6 +176,9 @@ class Client:
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
+
+            cert (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
 
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
@@ -272,7 +272,7 @@ class Client:
                     allow_redirect=allow_redirect,
                     proxy_url=proxy_url,
                     verify=verify,
-                    ca_cert_path=self.__ca_cert_path,
+                    cert=cert or self.__cert,
                     stream_callback=stream_callback,
                     progress_callback=progress_callback,
                     verbose=self.force_verbose or verbose,
@@ -290,6 +290,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
@@ -325,6 +326,9 @@ class Client:
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
+            cert (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
+
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
@@ -347,6 +351,7 @@ class Client:
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
+            cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
@@ -361,6 +366,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        cert: str = None,
         verbose: bool = False,
     ):
         """
@@ -394,6 +400,9 @@ class Client:
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
+            cert (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
+
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
@@ -410,6 +419,7 @@ class Client:
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
+            cert=cert,
             verbose=self.force_verbose or verbose,
         )
 
@@ -426,6 +436,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
@@ -477,6 +488,9 @@ class Client:
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
+            cert (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
+
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
@@ -503,6 +517,7 @@ class Client:
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
+            cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
@@ -521,6 +536,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
@@ -572,6 +588,9 @@ class Client:
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
+            cert (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
+
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
@@ -598,6 +617,7 @@ class Client:
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
+            cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
@@ -616,6 +636,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
@@ -667,6 +688,9 @@ class Client:
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
+            cert (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
+
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
@@ -693,6 +717,7 @@ class Client:
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
+            cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
@@ -707,6 +732,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
@@ -742,6 +768,9 @@ class Client:
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
+            cert (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
+
             stream_callback (:class:`redc.StreamCallback`, *optional*):
                 Callback for streaming response data. Default is ``None``
 
@@ -764,6 +793,7 @@ class Client:
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
+            cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
@@ -778,6 +808,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        cert: str = None,
         verbose: bool = False,
     ):
         """
@@ -811,6 +842,9 @@ class Client:
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
+            cert (``str``, *optional*):
+                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
+
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
@@ -827,6 +861,7 @@ class Client:
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
             verify=verify,
+            cert=cert,
             verbose=self.force_verbose or verbose,
         )
 

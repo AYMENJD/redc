@@ -90,8 +90,8 @@ RedC::request(const char *method, const char *url, const py_object &params,
               const py_object &data, const py_object &files,
               const py_object &headers, const long &timeout_ms,
               const long &connect_timeout_ms, const bool &allow_redirect,
-              const char *proxy_url, const bool &verify,
-              const char *ca_cert_path, const py_object &stream_callback,
+              const char *proxy_url, const bool &verify, const char *cert,
+              const py_object &stream_callback,
               const py_object &progress_callback, const bool &verbose) {
   CHECK_RUNNING();
 
@@ -147,8 +147,8 @@ RedC::request(const char *method, const char *url, const py_object &params,
     if (!verify) {
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
-    } else if (!isNullOrEmpty(ca_cert_path)) {
-      curl_easy_setopt(easy, CURLOPT_CAINFO, ca_cert_path);
+    } else if (!isNullOrEmpty(cert)) {
+      curl_easy_setopt(easy, CURLOPT_CAINFO, cert);
     }
 
     if (!params.is_none()) {
@@ -589,8 +589,8 @@ NB_MODULE(redc_ext, m) {
            arg("data") = nb::none(), arg("files") = nb::none(),
            arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,
-           arg("proxy_url") = "", arg("verify") = true,
-           arg("ca_cert_path") = "", arg("stream_callback") = nb::none(),
+           arg("proxy_url") = "", arg("verify") = true, arg("cert") = "",
+           arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false)
       .def("close", &RedC::close, nb::call_guard<nb::gil_scoped_release>());
 }
