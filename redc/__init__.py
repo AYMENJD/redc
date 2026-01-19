@@ -4,7 +4,7 @@ from .client import Client
 from .codes import HTTPStatus
 from .exceptions import HTTPError
 from .response import Response
-from ._version import __version__, __copyright__, __license__
+from ._version import CURL_VERSION, __version__, __copyright__, __license__
 
 __all__ = [
     "utils",
@@ -14,6 +14,7 @@ __all__ = [
     "HTTPStatus",
     "HTTPError",
     "Response",
+    "CURL_VERSION",
     "__version__",
     "__copyright__",
     "__license__",
