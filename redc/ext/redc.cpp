@@ -468,6 +468,7 @@ size_t RedC::write_callback(char *data, size_t size, size_t nmemb,
       clientp->stream_callback(py_bytes(data, total_size), total_size);
     } catch (const std::exception &e) {
       std::cerr << "Error in stream_callback: " << e.what() << std::endl;
+      return 0; // abort transfer
     }
   } else {
     clientp->response.insert(clientp->response.end(), data, data + total_size);
