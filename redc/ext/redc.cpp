@@ -453,6 +453,7 @@ size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal,
       clientp->progress_callback(dltotal, dlnow, ultotal, ulnow);
     } catch (const std::exception &e) {
       std::cerr << "Error in progress_callback: " << e.what() << std::endl;
+      return 1; // abort transfer
     }
   }
   return 0;
