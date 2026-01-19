@@ -4,6 +4,8 @@
 #include <atomic>
 #include <cstring>
 #include <mutex>
+#include <nanobind/stl/optional.h>
+#include <nanobind/stl/string_view.h>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -25,8 +27,9 @@ using rel_gil = nb::gil_scoped_release;
 
 using py_object = nb::object;
 using py_bytes = nb::bytes;
+using py_dict = nb::dict;
 using arg = nb::arg;
-using dict = nb::dict;
+using string = std::string;
 
 inline bool isNullOrEmpty(const char *str) { return !str || !*str; }
 
@@ -74,6 +77,12 @@ struct Data {
   std::vector<char> response;
 };
 
+struct Result {
+  Data data;
+  CURLcode res;
+  long response_code;
+};
+
 class RedC {
 public:
   RedC(const long &buffer = 16384);
@@ -83,7 +92,8 @@ public:
   void close();
 
   py_object request(
-      const char *method, const char *url, const char *raw_data = "",
+      const char *method, const char *url,
+      std::optional<std::string_view> raw_data = "",
       const py_object &file_stream = nb::none(), const long &file_size = 0,
       const py_object &data = nb::none(), const py_object &files = nb::none(),
       const py_object &headers = nb::none(), const long &timeout_ms = 60 * 1000,
@@ -97,6 +107,8 @@ public:
 private:
   int still_running_{0};
   long buffer_size_;
+
+  py_object asyncio_;
   py_object loop_;
   py_object call_soon_threadsafe_;
 
@@ -117,7 +129,6 @@ private:
 
   CURL *get_handle();
   void release_handle(CURL *easy);
-
   static size_t read_callback(char *buffer, size_t size, size_t nitems,
                               Data *clientp);
   static size_t header_callback(char *buffer, size_t size, size_t nitems,
