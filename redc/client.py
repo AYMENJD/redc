@@ -120,6 +120,7 @@ class Client:
         self,
         method: str,
         url: str,
+        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         form: dict = None,
         json=None,
         data: Union[dict[str, str], BinaryIO] = None,
@@ -147,6 +148,9 @@ class Client:
 
             url (``str``):
                 The URL to send the request to or path if ``base_url`` is specified in ``Client``
+
+            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+                Query parameters to include in the request. Default is ``None``
 
             form (``dict``, *optional*):
                 Form data to send in the request body. Default is ``None``
@@ -256,6 +260,7 @@ class Client:
                 await self.__redc_ext.request(
                     method=method,
                     url=url,
+                    params=params,
                     raw_data=form or json or "",
                     file_stream=file_stream,
                     file_size=file_size,
@@ -279,6 +284,7 @@ class Client:
     async def get(
         self,
         url: str,
+        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -299,6 +305,9 @@ class Client:
         Parameters:
             url (``str``):
                 The URL to send the GET request to or path if ``base_url`` is specified in ``Client``
+
+            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+                Query parameters to include in the request. Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
@@ -332,6 +341,7 @@ class Client:
         return await self.request(
             method="GET",
             url=url,
+            params=params,
             headers=headers,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -345,6 +355,7 @@ class Client:
     async def head(
         self,
         url: str,
+        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -363,6 +374,9 @@ class Client:
         Parameters:
             url (``str``):
                 The URL to send the HEAD request to or path if ``base_url`` is specified in ``Client``
+
+            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+                Query parameters to include in the request. Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
@@ -390,6 +404,7 @@ class Client:
         return await self.request(
             method="HEAD",
             url=url,
+            params=params,
             headers=headers,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -401,6 +416,7 @@ class Client:
     async def post(
         self,
         url: str,
+        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         form: dict = None,
         json=None,
         data: Union[dict[str, str], BinaryIO] = None,
@@ -429,6 +445,9 @@ class Client:
         Parameters:
             url (``str``):
                 The URL to send the POST request to or path if ``base_url`` is specified in ``Client``
+
+            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+                Query parameters to include in the request. Default is ``None``
 
             form (``dict``, *optional*):
                 Form data to send in the request body. Default is ``None``
@@ -474,6 +493,7 @@ class Client:
         return await self.request(
             method="POST",
             url=url,
+            params=params,
             form=form,
             json=json,
             data=data,
@@ -491,6 +511,7 @@ class Client:
     async def put(
         self,
         url: str,
+        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         form: dict = None,
         json=None,
         data: Union[dict[str, str], BinaryIO] = None,
@@ -519,6 +540,9 @@ class Client:
         Parameters:
             url (``str``):
                 The URL to send the PUT request to or path if ``base_url`` is specified in ``Client``
+
+            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+                Query parameters to include in the request. Default is ``None``
 
             form (``dict``, *optional*):
                 Form data to send in the request body. Default is ``None``
@@ -564,6 +588,7 @@ class Client:
         return await self.request(
             method="PUT",
             url=url,
+            params=params,
             form=form,
             json=json,
             data=data,
@@ -581,6 +606,7 @@ class Client:
     async def patch(
         self,
         url: str,
+        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         form: dict = None,
         json=None,
         data: Union[dict[str, str], BinaryIO] = None,
@@ -609,6 +635,9 @@ class Client:
         Parameters:
             url (``str``):
                 The URL to send the PATCH request to or path if ``base_url`` is specified in ``Client``
+
+            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+                Query parameters to include in the request. Default is ``None``
 
             form (``dict``, *optional*):
                 Form data to send in the request body. Default is ``None``
@@ -654,6 +683,7 @@ class Client:
         return await self.request(
             method="PATCH",
             url=url,
+            params=params,
             form=form,
             json=json,
             data=data,
@@ -671,6 +701,7 @@ class Client:
     async def delete(
         self,
         url: str,
+        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -691,6 +722,9 @@ class Client:
         Parameters:
             url (``str``):
                 The URL to send the DELETE request to or path if ``base_url`` is specified in ``Client``
+
+            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+                Query parameters to include in the request. Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
@@ -724,6 +758,7 @@ class Client:
         return await self.request(
             method="DELETE",
             url=url,
+            params=params,
             headers=headers,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -737,6 +772,7 @@ class Client:
     async def options(
         self,
         url: str,
+        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -755,6 +791,9 @@ class Client:
         Parameters:
             url (``str``):
                 The URL to send the OPTIONS request to or path if ``base_url`` is specified in ``Client``
+
+            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+                Query parameters to include in the request. Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
@@ -782,6 +821,7 @@ class Client:
         return await self.request(
             method="OPTIONS",
             url=url,
+            params=params,
             headers=headers,
             timeout=timeout,
             allow_redirect=allow_redirect,

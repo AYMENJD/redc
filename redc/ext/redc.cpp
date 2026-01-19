@@ -77,23 +77,22 @@ void RedC::close() {
 }
 
 inline string get_as_string(const nb::handle &h) {
-  if (nb::isinstance<nb::str>(h)) {
+  if (nb::isinstance<py_str>(h)) {
     return nb::cast<string>(h);
   }
-  return nb::cast<string>(nb::str(h));
+  return nb::cast<string>(py_str(h));
 }
 
-py_object RedC::request(const char *method, const char *url,
-                        std::optional<std::string_view> raw_data,
-                        const py_object &file_stream, const long &file_size,
-                        const py_object &data, const py_object &files,
-                        const py_object &headers, const long &timeout_ms,
-                        const long &connect_timeout_ms,
-                        const bool &allow_redirect, const char *proxy_url,
-                        const bool &verify, const char *ca_cert_path,
-                        const py_object &stream_callback,
-                        const py_object &progress_callback,
-                        const bool &verbose) {
+py_object
+RedC::request(const char *method, const char *url, const py_object &params,
+              std::optional<std::string_view> raw_data,
+              const py_object &file_stream, const long &file_size,
+              const py_object &data, const py_object &files,
+              const py_object &headers, const long &timeout_ms,
+              const long &connect_timeout_ms, const bool &allow_redirect,
+              const char *proxy_url, const bool &verify,
+              const char *ca_cert_path, const py_object &stream_callback,
+              const py_object &progress_callback, const bool &verbose) {
   CHECK_RUNNING();
 
   if (isNullOrEmpty(method) || isNullOrEmpty(url)) {
@@ -150,6 +149,87 @@ py_object RedC::request(const char *method, const char *url,
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
     } else if (!isNullOrEmpty(ca_cert_path)) {
       curl_easy_setopt(easy, CURLOPT_CAINFO, ca_cert_path);
+    }
+
+    if (!params.is_none()) {
+      CURLU *urlp = curl_url();
+      if (!urlp) {
+        throw std::runtime_error("curl_url(): failed");
+      }
+
+      curl_url_set(urlp, CURLUPART_URL, url, 0);
+
+      auto append_pair = [&](const std::string &k, const std::string &v) {
+        std::string pair = k + "=" + v;
+        CURLUcode rc = curl_url_set(urlp, CURLUPART_QUERY, pair.c_str(),
+                                    CURLU_APPENDQUERY | CURLU_URLENCODE);
+
+        if (rc != CURLUE_OK) {
+          curl_url_cleanup(urlp);
+          throw std::runtime_error("curl_url(): Failed to append query param");
+        }
+      };
+
+      auto handle_value = [&](const std::string &key, nb::handle value) {
+        if (nb::isinstance<py_list>(value) || nb::isinstance<py_tuple>(value)) {
+          for (auto v : value) {
+            append_pair(key, get_as_string(v));
+          }
+        } else {
+          append_pair(key, get_as_string(value));
+        }
+      };
+
+      if (nb::isinstance<py_dict>(params)) {
+        py_dict d = nb::borrow<py_dict>(params);
+        for (auto item : d) {
+          std::string k = get_as_string(item.first);
+          handle_value(k, item.second);
+        }
+
+      } else if (nb::isinstance<py_list>(params) ||
+                 nb::isinstance<py_tuple>(params)) {
+        for (auto item : params) {
+          py_tuple t = nb::cast<py_tuple>(item);
+          if (t.size() != 2) {
+            curl_url_cleanup(urlp);
+            throw std::runtime_error(
+                "curl_url(): params tuple must be (key, value)");
+          }
+
+          std::string k = get_as_string(t[0]);
+          handle_value(k, t[1]);
+        }
+
+      } else if (nb::isinstance<py_bytes>(params) ||
+                 nb::isinstance<py_str>(params)) {
+        std::string raw = get_as_string(params);
+
+        CURLUcode rc =
+            curl_url_set(urlp, CURLUPART_QUERY, raw.c_str(), CURLU_APPENDQUERY);
+
+        if (rc != CURLUE_OK) {
+          curl_url_cleanup(urlp);
+          throw std::runtime_error("curl_url(): Invalid raw query string");
+        }
+
+      } else {
+        curl_url_cleanup(urlp);
+        throw std::runtime_error(
+            "curl_url(): params must be dict, list of tuples, or str/bytes");
+      }
+
+      char *final_url = nullptr;
+      CURLUcode rc = curl_url_get(urlp, CURLUPART_URL, &final_url, 0);
+      if (rc != CURLUE_OK) {
+        curl_url_cleanup(urlp);
+        throw std::runtime_error("curl_url(): Failed to build final URL");
+      }
+
+      curl_easy_setopt(easy, CURLOPT_URL, final_url);
+
+      curl_free(final_url);
+      curl_url_cleanup(urlp);
     }
 
     CurlMime curl_mime_;
@@ -453,7 +533,7 @@ size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal,
       clientp->progress_callback(dltotal, dlnow, ultotal, ulnow);
     } catch (const std::exception &e) {
       std::cerr << "Error in progress_callback: " << e.what() << std::endl;
-      return 1; // abort transfer
+      return 1;
     }
   }
   return 0;
@@ -504,13 +584,13 @@ NB_MODULE(redc_ext, m) {
       .def(nb::init<const long &>())
       .def("is_running", &RedC::is_running)
       .def("request", &RedC::request, arg("method"), arg("url"),
-           arg("raw_data") = "", arg("file_stream") = nb::none(),
-           arg("file_size") = 0, arg("data") = nb::none(),
-           arg("files") = nb::none(), arg("headers") = nb::none(),
-           arg("timeout_ms") = 60 * 1000, arg("connect_timeout_ms") = 0,
-           arg("allow_redirect") = true, arg("proxy_url") = "",
-           arg("verify") = true, arg("ca_cert_path") = "",
-           arg("stream_callback") = nb::none(),
+           arg("params") = nb::none(), arg("raw_data") = "",
+           arg("file_stream") = nb::none(), arg("file_size") = 0,
+           arg("data") = nb::none(), arg("files") = nb::none(),
+           arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
+           arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,
+           arg("proxy_url") = "", arg("verify") = true,
+           arg("ca_cert_path") = "", arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false)
       .def("close", &RedC::close, nb::call_guard<nb::gil_scoped_release>());
 }

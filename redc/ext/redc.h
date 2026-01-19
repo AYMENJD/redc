@@ -26,7 +26,10 @@ using acq_gil = nb::gil_scoped_acquire;
 using rel_gil = nb::gil_scoped_release;
 
 using py_object = nb::object;
+using py_str = nb::str;
 using py_bytes = nb::bytes;
+using py_tuple = nb::tuple;
+using py_list = nb::list;
 using py_dict = nb::dict;
 using arg = nb::arg;
 using string = std::string;
@@ -92,7 +95,7 @@ public:
   void close();
 
   py_object request(
-      const char *method, const char *url,
+      const char *method, const char *url, const py_object &params = nb::none(),
       std::optional<std::string_view> raw_data = "",
       const py_object &file_stream = nb::none(), const long &file_size = 0,
       const py_object &data = nb::none(), const py_object &files = nb::none(),
