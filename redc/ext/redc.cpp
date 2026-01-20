@@ -77,6 +77,10 @@ void RedC::close() {
 }
 
 inline string get_as_string(const nb::handle &h) {
+  if (nb::isinstance<py_bytes>(h)) {
+    auto b = nb::cast<py_bytes>(h);
+    return string(b.c_str(), b.size());
+  }
   if (nb::isinstance<py_str>(h)) {
     return nb::cast<string>(h);
   }
@@ -85,13 +89,12 @@ inline string get_as_string(const nb::handle &h) {
 
 py_object
 RedC::request(const char *method, const char *url, const py_object &params,
-              std::optional<std::string_view> raw_data,
-              const py_object &file_stream, const long &file_size,
-              const py_object &data, const py_object &files,
-              const py_object &headers, const long &timeout_ms,
-              const long &connect_timeout_ms, const bool &allow_redirect,
-              const char *proxy_url, const py_object &auth, const bool &verify,
-              const char *cert, const py_object &stream_callback,
+              std::optional<std::string_view> raw_data, const py_object &data,
+              const py_object &files, const py_object &headers,
+              const long &timeout_ms, const long &connect_timeout_ms,
+              const bool &allow_redirect, const char *proxy_url,
+              const py_object &auth, const bool &verify, const char *cert,
+              const py_object &stream_callback,
               const py_object &progress_callback, const bool &verbose) {
   CHECK_RUNNING();
 
@@ -282,50 +285,189 @@ RedC::request(const char *method, const char *url, const py_object &params,
       curl_url_cleanup(urlp);
     }
 
-    CurlMime curl_mime_;
+    py_object future{loop_.attr("create_future")()};
+
+    lock.lock();
+    auto [it, inserted] = transfers_.emplace(easy, Data{});
+    Data &d = it->second;
+    d.future = future;
+    d.loop = loop_;
+    d.stream_callback = stream_callback;
+    d.progress_callback = progress_callback;
+    d.has_stream_callback = !stream_callback.is_none() && !is_nobody;
+    d.has_progress_callback = !progress_callback.is_none() && !is_nobody;
+    lock.unlock();
 
     if (raw_data.has_value() && !raw_data->empty()) {
       curl_easy_setopt(easy, CURLOPT_POSTFIELDS, raw_data->data());
       curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE,
                        (curl_off_t)raw_data->size());
-    } else if (!data.is_none() || !files.is_none()) {
-      curl_mime_.mime = curl_mime_init(easy);
+    } else if (!files.is_none()) {
+      d.curl_mime_.mime = curl_mime_init(easy);
 
       if (!data.is_none()) {
-        if (!nb::isinstance<py_dict>(data)) {
-          throw std::runtime_error("data must be dict");
-        }
+        if (nb::isinstance<py_dict>(data)) {
+          py_dict dict_data = nb::borrow<py_dict>(data);
+          for (auto item : dict_data) {
+            curl_mimepart *part = curl_mime_addpart(d.curl_mime_.mime);
+            string k = get_as_string(item.first);
 
-        py_dict dict_data = nb::borrow<py_dict>(data);
+            string &v =
+                d.mime_data_store.emplace_back(get_as_string(item.second));
 
-        for (auto item : dict_data) {
-          curl_mimepart *part = curl_mime_addpart(curl_mime_.mime);
+            curl_mime_name(part, k.c_str());
+            curl_mime_data(part, v.c_str(), CURL_ZERO_TERMINATED);
+          }
+        } else if (nb::isinstance<py_list>(data) ||
+                   nb::isinstance<py_tuple>(data)) {
+          for (auto item : data) {
+            py_tuple t = nb::cast<py_tuple>(item);
+            if (t.size() == 2) {
+              curl_mimepart *part = curl_mime_addpart(d.curl_mime_.mime);
+              string k = get_as_string(t[0]);
 
-          string k = get_as_string(item.first);
-          string v = get_as_string(item.second);
+              string &v = d.mime_data_store.emplace_back(get_as_string(t[1]));
 
-          curl_mime_name(part, k.c_str());
-          curl_mime_data(part, v.c_str(), CURL_ZERO_TERMINATED);
+              curl_mime_name(part, k.c_str());
+              curl_mime_data(part, v.c_str(), CURL_ZERO_TERMINATED);
+            }
+          }
         }
       }
 
-      if (!files.is_none()) {
-        if (!nb::isinstance<py_dict>(files))
-          throw std::runtime_error("files must be dict");
+      auto handle_content = [&](curl_mimepart *part, nb::handle content) {
+        if (nb::isinstance<py_bytes>(content)) {
+          string &b_str =
+              d.mime_data_store.emplace_back(get_as_string(content));
+          curl_mime_data(part, b_str.c_str(), b_str.size());
+        } else if (nb::isinstance<py_str>(content)) {
+          string &s_str =
+              d.mime_data_store.emplace_back(get_as_string(content));
+          curl_mime_data(part, s_str.c_str(), CURL_ZERO_TERMINATED);
+        } else if (nb::hasattr(content, "readinto")) {
+          d.mime_streams.push_back(nb::borrow<py_object>(content));
+          py_object *stream_ptr = &d.mime_streams.back();
 
+          curl_off_t size = -1;
+          if (nb::hasattr(content, "__len__")) {
+            try {
+              size = nb::cast<size_t>(content.attr("__len__")());
+            } catch (...) {
+            }
+          }
+          curl_mime_data_cb(part, size, RedC::mime_read_callback, nullptr,
+                            nullptr, stream_ptr);
+        }
+      };
+
+      if (nb::isinstance<py_dict>(files)) {
         py_dict dict_files = nb::borrow<py_dict>(files);
-
         for (auto item : dict_files) {
-          curl_mimepart *part = curl_mime_addpart(curl_mime_.mime);
+          string field_name = get_as_string(item.first);
+          nb::handle value = item.second;
 
-          string k = get_as_string(item.first);
-          string v = get_as_string(item.second);
+          curl_mimepart *part = curl_mime_addpart(d.curl_mime_.mime);
+          curl_mime_name(part, field_name.c_str());
 
-          curl_mime_name(part, k.c_str());
-          curl_mime_filedata(part, v.c_str());
+          if (nb::isinstance<py_tuple>(value)) {
+            py_tuple t = nb::cast<py_tuple>(value);
+            size_t t_size = t.size();
+            if (t_size >= 2) {
+              string filename = get_as_string(t[0]);
+              curl_mime_filename(part, filename.c_str());
+
+              handle_content(part, t[1]);
+
+              if (t_size >= 3) {
+                string ctype = get_as_string(t[2]);
+                curl_mime_type(part, ctype.c_str());
+              }
+
+              if (t_size >= 4) {
+                nb::handle custom_headers = t[3];
+                if (nb::isinstance<py_dict>(custom_headers)) {
+                  struct curl_slist *part_headers = nullptr;
+                  for (auto h_item : nb::borrow<py_dict>(custom_headers)) {
+                    string h_str = get_as_string(h_item.first) + ": " +
+                                   get_as_string(h_item.second);
+                    part_headers =
+                        curl_slist_append(part_headers, h_str.c_str());
+                  }
+                  curl_mime_headers(part, part_headers, 1);
+                }
+              }
+            }
+          } else if (nb::isinstance<py_str>(value)) {
+            curl_mime_filedata(part, get_as_string(value).c_str());
+          } else if (nb::hasattr(value, "readinto")) {
+            if (nb::hasattr(value, "name")) {
+              try {
+                string fn = get_as_string(value.attr("name"));
+                curl_mime_filename(part, fn.c_str());
+              } catch (...) {
+              }
+            }
+            handle_content(part, value);
+          }
         }
       }
-      curl_easy_setopt(easy, CURLOPT_MIMEPOST, curl_mime_.mime);
+      curl_easy_setopt(easy, CURLOPT_MIMEPOST, d.curl_mime_.mime);
+    } else if (!data.is_none()) {
+      if (nb::hasattr(data, "readinto")) {
+        d.body_stream = data;
+        curl_easy_setopt(easy, CURLOPT_UPLOAD, 1L);
+        curl_easy_setopt(easy, CURLOPT_READFUNCTION, &RedC::read_callback);
+        curl_easy_setopt(easy, CURLOPT_READDATA, &d);
+
+        if (nb::hasattr(data, "__len__")) {
+          size_t size = nb::cast<size_t>(data.attr("__len__")());
+          curl_easy_setopt(easy, CURLOPT_INFILESIZE_LARGE, (curl_off_t)size);
+        }
+      } else if (nb::isinstance<py_dict>(data) ||
+                 nb::isinstance<py_list>(data) ||
+                 nb::isinstance<py_tuple>(data)) {
+        string &buf = d.post_data_buffer;
+
+        auto encode_append = [&](const string &k, const string &v) {
+          if (!buf.empty()) {
+            buf += "&";
+          }
+          char *ek = curl_easy_escape(easy, k.c_str(), (int)k.length());
+          char *ev = curl_easy_escape(easy, v.c_str(), (int)v.length());
+          if (ek) {
+            buf += ek;
+          }
+          buf += "=";
+          if (ev) {
+            buf += ev;
+          }
+          if (ek) {
+            curl_free(ek);
+          }
+          if (ev) {
+            curl_free(ev);
+          }
+        };
+
+        if (nb::isinstance<py_dict>(data)) {
+          for (auto item : nb::borrow<py_dict>(data)) {
+            encode_append(get_as_string(item.first),
+                          get_as_string(item.second));
+          }
+        } else {
+          for (auto item : data) {
+            py_tuple t = nb::cast<py_tuple>(item);
+            if (t.size() == 2) {
+              encode_append(get_as_string(t[0]), get_as_string(t[1]));
+            }
+          }
+        }
+
+        curl_easy_setopt(easy, CURLOPT_POSTFIELDS, buf.c_str());
+      } else {
+        string raw = get_as_string(data);
+        curl_easy_setopt(easy, CURLOPT_POSTFIELDS, raw.c_str());
+      }
     }
 
     CurlSlist slist_headers;
@@ -337,52 +479,27 @@ RedC::request(const char *method, const char *url, const py_object &params,
       curl_easy_setopt(easy, CURLOPT_HTTPHEADER, slist_headers.slist);
     }
 
-    py_object future{loop_.attr("create_future")()};
+    lock.lock();
+    d.request_headers = std::move(slist_headers);
 
-    {
-      lock.lock();
-      auto [it, inserted] = transfers_.emplace(easy, Data{});
-      Data &d = it->second;
+    curl_easy_setopt(easy, CURLOPT_HEADERDATA, &d);
 
-      d.future = future;
-      d.loop = loop_;
-      d.stream_callback = stream_callback;
-      d.progress_callback = progress_callback;
-      d.file_stream = file_stream;
+    if (!is_nobody) {
+      curl_easy_setopt(easy, CURLOPT_WRITEDATA, &d);
 
-      d.has_stream_callback = !stream_callback.is_none() && !is_nobody;
-      d.has_progress_callback = !progress_callback.is_none() && !is_nobody;
-
-      d.request_headers = std::move(slist_headers);
-      d.curl_mime_ = std::move(curl_mime_);
-
-      curl_easy_setopt(easy, CURLOPT_HEADERDATA, &d);
-
-      if (!is_nobody) {
-        curl_easy_setopt(easy, CURLOPT_WRITEDATA, &d);
-
-        if (d.has_progress_callback) {
-          curl_easy_setopt(easy, CURLOPT_XFERINFODATA, &d);
-          curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 0L);
-          curl_easy_setopt(easy, CURLOPT_XFERINFOFUNCTION,
-                           &RedC::progress_callback);
-        } else {
-          curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
-        }
-
-        if (!file_stream.is_none()) {
-          curl_easy_setopt(easy, CURLOPT_UPLOAD, 1L);
-          curl_easy_setopt(easy, CURLOPT_READDATA, &d);
-          curl_easy_setopt(easy, CURLOPT_READFUNCTION, &RedC::read_callback);
-          curl_easy_setopt(easy, CURLOPT_INFILESIZE_LARGE,
-                           (curl_off_t)file_size);
-        }
+      if (d.has_progress_callback) {
+        curl_easy_setopt(easy, CURLOPT_XFERINFODATA, &d);
+        curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 0L);
+        curl_easy_setopt(easy, CURLOPT_XFERINFOFUNCTION,
+                         &RedC::progress_callback);
+      } else {
+        curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 1L);
       }
-      lock.unlock();
     }
+    lock.unlock();
 
     queue_.enqueue(easy);
-    curl_multi_wakeup(multi_handle_); // thread-safe
+    curl_multi_wakeup(multi_handle_);
 
     return future;
 
@@ -440,8 +557,9 @@ void RedC::worker_loop() {
     int numfds;
     curl_multi_poll(multi_handle_, nullptr, 0, 100, &numfds);
 
-    if (!running_)
+    if (!running_) {
       return;
+    }
 
     curl_multi_perform(multi_handle_, &still_running_);
 
@@ -562,9 +680,26 @@ void RedC::CHECK_RUNNING() {
 size_t RedC::read_callback(char *buffer, size_t size, size_t nitems,
                            Data *clientp) {
   acq_gil gil;
+  if (clientp->body_stream.is_none()) {
+    return 0;
+  }
+
   auto memview = nb::memoryview::from_memory(buffer, size * nitems);
-  auto result = clientp->file_stream.attr("readinto")(memview);
+  auto result = clientp->body_stream.attr("readinto")(memview);
   return nb::cast<curl_off_t>(result);
+}
+
+size_t RedC::mime_read_callback(char *buffer, size_t size, size_t nitems,
+                                void *arg) {
+  py_object *stream = static_cast<py_object *>(arg);
+  acq_gil gil;
+  try {
+    auto memview = nb::memoryview::from_memory(buffer, size * nitems);
+    auto result = stream->attr("readinto")(memview);
+    return nb::cast<size_t>(result);
+  } catch (...) {
+    return CURL_READFUNC_ABORT;
+  }
 }
 
 size_t RedC::header_callback(char *buffer, size_t size, size_t nitems,
@@ -583,7 +718,7 @@ size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal,
       clientp->progress_callback(dltotal, dlnow, ultotal, ulnow);
     } catch (const std::exception &e) {
       std::cerr << "Error in progress_callback: " << e.what() << std::endl;
-      return 1;
+      return 1; // abort transfer
     }
   }
   return 0;
@@ -635,7 +770,6 @@ NB_MODULE(redc_ext, m) {
       .def("is_running", &RedC::is_running)
       .def("request", &RedC::request, arg("method"), arg("url"),
            arg("params") = nb::none(), arg("raw_data") = "",
-           arg("file_stream") = nb::none(), arg("file_size") = 0,
            arg("data") = nb::none(), arg("files") = nb::none(),
            arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,
@@ -643,5 +777,6 @@ NB_MODULE(redc_ext, m) {
            arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false)
+
       .def("close", &RedC::close, nb::call_guard<nb::gil_scoped_release>());
 }

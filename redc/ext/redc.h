@@ -3,6 +3,7 @@
 
 #include <atomic>
 #include <cstring>
+#include <list>
 #include <mutex>
 #include <nanobind/stl/optional.h>
 #include <nanobind/stl/string_view.h>
@@ -55,20 +56,27 @@ struct Data {
     loop = {};
     stream_callback = {};
     progress_callback = {};
-    file_stream = {};
+    body_stream = {};
+    mime_streams.clear();
+    mime_data_store.clear();
 
     headers.clear();
     response.clear();
 
     request_headers = {};
     curl_mime_ = {};
+    post_data_buffer.clear();
   }
 
   py_object future;
   py_object loop;
   py_object stream_callback{nb::none()};
   py_object progress_callback{nb::none()};
-  py_object file_stream{nb::none()};
+
+  py_object body_stream{nb::none()};
+
+  std::list<py_object> mime_streams;
+  std::list<string> mime_data_store;
 
   bool has_stream_callback{false};
   bool has_progress_callback{false};
@@ -76,6 +84,8 @@ struct Data {
   std::vector<char> headers;
   CurlSlist request_headers;
   CurlMime curl_mime_;
+
+  string post_data_buffer;
 
   std::vector<char> response;
 };
@@ -97,7 +107,6 @@ public:
   py_object request(
       const char *method, const char *url, const py_object &params = nb::none(),
       std::optional<std::string_view> raw_data = "",
-      const py_object &file_stream = nb::none(), const long &file_size = 0,
       const py_object &data = nb::none(), const py_object &files = nb::none(),
       const py_object &headers = nb::none(), const long &timeout_ms = 60 * 1000,
       const long &connect_timeout_ms = 0, const bool &allow_redirect = true,
@@ -132,8 +141,11 @@ private:
 
   CURL *get_handle();
   void release_handle(CURL *easy);
+
   static size_t read_callback(char *buffer, size_t size, size_t nitems,
                               Data *clientp);
+  static size_t mime_read_callback(char *buffer, size_t size, size_t nitems,
+                                   void *arg);
   static size_t header_callback(char *buffer, size_t size, size_t nitems,
                                 Data *clientp);
   static size_t progress_callback(Data *clientp, curl_off_t dltotal,

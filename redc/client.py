@@ -9,7 +9,7 @@ import redc
 from .callbacks import ProgressCallback, StreamCallback
 from .redc_ext import RedC
 from .response import Response
-from .utils import Headers, get_fsize, json_dumps, parse_base_url
+from .utils import Headers, json_dumps, parse_base_url
 
 
 class Client:
@@ -156,11 +156,26 @@ class Client:
             json (``dict``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
-            data (``dict[str, str]`` || ``BinaryIO``, *optional*):
-                Multipart form data dict or a binary file-like object (requires ``readinto``). Default is ``None``
+            data (``dict`` | ``list[tuple]`` | ``bytes`` | ``str`` | ``BinaryIO``, *optional*):
+                Data to send in the body of the Request.
+                - If a **dict** or **list of tuples**: Sends as ``application/x-www-form-urlencoded``.
+                - If **bytes** or **str**: Sends as raw body.
+                - If a **file-like object** (has ``readinto``): Streams the data.
+                - If ``files`` is provided, ``data`` constitutes the non-file fields of the multipart request.
+                Default is ``None``
 
-            files (``dict[str, str]``, *optional*):
-                A dictionary specifying files to upload as part of a multipart form request, ``key`` is the form field and ``value`` is string containing the file path
+            files (``dict``, *optional*):
+                Dictionary of ``'name': file-val`` for multipart encoding upload.
+                ``file-val`` can be
+                - A **string** (file path).
+                - **bytes** (file content).
+                - A **file-like object** (stream).
+                - A **tuple** in the format
+                    - ``('filename', file-val)``
+                    - ``('filename', file-val, 'content_type')``
+                    - ``('filename', file-val, 'content_type', custom_headers)``
+                        where ``custom_headers`` is a ``dict`` containing additional headers for the file part.
+                Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
@@ -219,22 +234,6 @@ class Client:
                 headers = {}
             headers["Content-Type"] = "application/json"
 
-        file_stream = None
-        file_size = 0
-        if data is not None:
-            if hasattr(data, "readinto"):
-                file_stream = data
-                file_size = get_fsize(file_stream)
-                data = None
-            elif not isinstance(data, dict):
-                raise TypeError(
-                    "data must be either dict[str, str] or a file-like object with readinto method"
-                )
-
-        if files is not None:
-            if not isinstance(files, dict):
-                raise TypeError("files must be of type dict[str, str]")
-
         timeout, connect_timeout = timeout if timeout is not None else self.__timeout
 
         if timeout <= 0:
@@ -267,8 +266,6 @@ class Client:
                     url=url,
                     params=params,
                     raw_data=form or json or "",
-                    file_stream=file_stream,
-                    file_size=file_size,
                     data=data,
                     files=files,
                     headers=headers,
@@ -485,11 +482,26 @@ class Client:
             json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
-            data (``dict[str, str]`` || ``BinaryIO``, *optional*):
-                Multipart form data dict or a binary file-like object (requires ``readinto``). Default is ``None``
+            data (``dict`` | ``list[tuple]`` | ``bytes`` | ``str`` | ``BinaryIO``, *optional*):
+                Data to send in the body of the Request.
+                - If a **dict** or **list of tuples**: Sends as ``application/x-www-form-urlencoded``.
+                - If **bytes** or **str**: Sends as raw body.
+                - If a **file-like object** (has ``readinto``): Streams the data.
+                - If ``files`` is provided, ``data`` constitutes the non-file fields of the multipart request.
+                Default is ``None``
 
-            files (``dict[str, str]``, *optional*):
-                A dictionary specifying files to upload as part of a multipart form request, ``key`` is the form field and ``value`` is string containing the file path
+            files (``dict``, *optional*):
+                Dictionary of ``'name': file-val`` for multipart encoding upload.
+                ``file-val`` can be
+                - A **string** (file path).
+                - **bytes** (file content).
+                - A **file-like object** (stream).
+                - A **tuple** in the format
+                    - ``('filename', file-val)``
+                    - ``('filename', file-val, 'content_type')``
+                    - ``('filename', file-val, 'content_type', custom_headers)``
+                        where ``custom_headers`` is a ``dict`` containing additional headers for the file part.
+                Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
@@ -591,11 +603,26 @@ class Client:
             json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
-            data (``dict[str, str]`` || ``BinaryIO``, *optional*):
-                Multipart form data dict or a binary file-like object (requires ``readinto``). Default is ``None``
+            data (``dict`` | ``list[tuple]`` | ``bytes`` | ``str`` | ``BinaryIO``, *optional*):
+                Data to send in the body of the Request.
+                - If a **dict** or **list of tuples**: Sends as ``application/x-www-form-urlencoded``.
+                - If **bytes** or **str**: Sends as raw body.
+                - If a **file-like object** (has ``readinto``): Streams the data.
+                - If ``files`` is provided, ``data`` constitutes the non-file fields of the multipart request.
+                Default is ``None``
 
-            files (``dict[str, str]``, *optional*):
-                A dictionary specifying files to upload as part of a multipart form request, ``key`` is the form field and ``value`` is string containing the file path
+            files (``dict``, *optional*):
+                Dictionary of ``'name': file-val`` for multipart encoding upload.
+                ``file-val`` can be
+                - A **string** (file path).
+                - **bytes** (file content).
+                - A **file-like object** (stream).
+                - A **tuple** in the format
+                    - ``('filename', file-val)``
+                    - ``('filename', file-val, 'content_type')``
+                    - ``('filename', file-val, 'content_type', custom_headers)``
+                        where ``custom_headers`` is a ``dict`` containing additional headers for the file part.
+                Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
@@ -697,11 +724,26 @@ class Client:
             json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
 
-            data (``dict[str, str]`` || ``BinaryIO``, *optional*):
-                Multipart form data dict or a binary file-like object (requires ``readinto``). Default is ``None``
+            data (``dict`` | ``list[tuple]`` | ``bytes`` | ``str`` | ``BinaryIO``, *optional*):
+                Data to send in the body of the Request.
+                - If a **dict** or **list of tuples**: Sends as ``application/x-www-form-urlencoded``.
+                - If **bytes** or **str**: Sends as raw body.
+                - If a **file-like object** (has ``readinto``): Streams the data.
+                - If ``files`` is provided, ``data`` constitutes the non-file fields of the multipart request.
+                Default is ``None``
 
-            files (``dict[str, str]``, *optional*):
-                A dictionary specifying files to upload as part of a multipart form request, ``key`` is the form field and ``value`` is string containing the file path
+            files (``dict``, *optional*):
+                Dictionary of ``'name': file-val`` for multipart encoding upload.
+                ``file-val`` can be
+                - A **string** (file path).
+                - **bytes** (file content).
+                - A **file-like object** (stream).
+                - A **tuple** in the format
+                    - ``('filename', file-val)``
+                    - ``('filename', file-val, 'content_type')``
+                    - ``('filename', file-val, 'content_type', custom_headers)``
+                        where ``custom_headers`` is a ``dict`` containing additional headers for the file part.
+                Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
