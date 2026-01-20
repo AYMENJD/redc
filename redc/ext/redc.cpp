@@ -119,6 +119,7 @@ RedC::request(const char *method, const char *url, const py_object &params,
     curl_easy_setopt(easy, CURLOPT_TCP_KEEPINTVL, 30L);
     curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(easy, CURLOPT_PIPEWAIT, 1L);
+    curl_easy_setopt(easy, CURLOPT_ACCEPT_ENCODING, "");
     curl_easy_setopt(easy, CURLOPT_BUFFERSIZE, buffer_size_);
 
     curl_easy_setopt(easy, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
