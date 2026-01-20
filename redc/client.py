@@ -125,6 +125,7 @@ class Client:
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
+        auth: Union[tuple, str] = None,
         verify: bool = True,
         cert: str = None,
         stream_callback: StreamCallback = None,
@@ -173,6 +174,10 @@ class Client:
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
+
+            auth (``tuple`` || ``str``, *optional*):
+                A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
+                Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
@@ -271,6 +276,7 @@ class Client:
                     connect_timeout_ms=int(connect_timeout * 1000),
                     allow_redirect=allow_redirect,
                     proxy_url=proxy_url,
+                    auth=auth,
                     verify=verify,
                     cert=cert or self.__cert,
                     stream_callback=stream_callback,
@@ -290,6 +296,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        auth: Union[tuple, str] = None,
         cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
@@ -323,6 +330,10 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            auth (``tuple`` || ``str``, *optional*):
+                A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
+                Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
+
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
@@ -350,6 +361,7 @@ class Client:
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
+            auth=auth,
             verify=verify,
             cert=cert,
             stream_callback=stream_callback,
@@ -366,6 +378,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        auth: Union[tuple, str] = None,
         cert: str = None,
         verbose: bool = False,
     ):
@@ -397,6 +410,10 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            auth (``tuple`` || ``str``, *optional*):
+                A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
+                Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
+
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
@@ -418,6 +435,7 @@ class Client:
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
+            auth=auth,
             verify=verify,
             cert=cert,
             verbose=self.force_verbose or verbose,
@@ -436,6 +454,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        auth: Union[tuple, str] = None,
         cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
@@ -485,6 +504,10 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            auth (``tuple`` || ``str``, *optional*):
+                A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
+                Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
+
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
@@ -516,6 +539,7 @@ class Client:
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
+            auth=auth,
             verify=verify,
             cert=cert,
             stream_callback=stream_callback,
@@ -536,6 +560,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        auth: Union[tuple, str] = None,
         cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
@@ -585,6 +610,10 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            auth (``tuple`` || ``str``, *optional*):
+                A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
+                Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
+
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
@@ -616,6 +645,7 @@ class Client:
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
+            auth=auth,
             verify=verify,
             cert=cert,
             stream_callback=stream_callback,
@@ -636,6 +666,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        auth: Union[tuple, str] = None,
         cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
@@ -685,6 +716,10 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            auth (``tuple`` || ``str``, *optional*):
+                A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
+                Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
+
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
@@ -716,6 +751,7 @@ class Client:
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
+            auth=auth,
             verify=verify,
             cert=cert,
             stream_callback=stream_callback,
@@ -732,6 +768,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        auth: Union[tuple, str] = None,
         cert: str = None,
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
@@ -765,6 +802,10 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            auth (``tuple`` || ``str``, *optional*):
+                A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
+                Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
+
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
@@ -792,6 +833,7 @@ class Client:
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
+            auth=auth,
             verify=verify,
             cert=cert,
             stream_callback=stream_callback,
@@ -808,6 +850,7 @@ class Client:
         allow_redirect: bool = True,
         proxy_url: str = "",
         verify: bool = True,
+        auth: Union[tuple, str] = None,
         cert: str = None,
         verbose: bool = False,
     ):
@@ -839,6 +882,10 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            auth (``tuple`` || ``str``, *optional*):
+                A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
+                Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
+
             verify (``bool``, *optional*):
                 Whether to verify SSL certificates. Default is ``True``
 
@@ -860,6 +907,7 @@ class Client:
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
+            auth=auth,
             verify=verify,
             cert=cert,
             verbose=self.force_verbose or verbose,

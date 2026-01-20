@@ -90,8 +90,8 @@ RedC::request(const char *method, const char *url, const py_object &params,
               const py_object &data, const py_object &files,
               const py_object &headers, const long &timeout_ms,
               const long &connect_timeout_ms, const bool &allow_redirect,
-              const char *proxy_url, const bool &verify, const char *cert,
-              const py_object &stream_callback,
+              const char *proxy_url, const py_object &auth, const bool &verify,
+              const char *cert, const py_object &stream_callback,
               const py_object &progress_callback, const bool &verbose) {
   CHECK_RUNNING();
 
@@ -141,14 +141,64 @@ RedC::request(const char *method, const char *url, const py_object &params,
       curl_easy_setopt(easy, CURLOPT_MAXREDIRS, 30L);
     }
 
-    if (!isNullOrEmpty(proxy_url))
+    if (!isNullOrEmpty(proxy_url)) {
       curl_easy_setopt(easy, CURLOPT_PROXY, proxy_url);
+    }
 
     if (!verify) {
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
     } else if (!isNullOrEmpty(cert)) {
       curl_easy_setopt(easy, CURLOPT_CAINFO, cert);
+    }
+
+    if (!auth.is_none()) {
+      if (nb::isinstance<py_str>(auth)) {
+        string token = get_as_string(auth);
+        curl_easy_setopt(easy, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
+        curl_easy_setopt(easy, CURLOPT_XOAUTH2_BEARER, token.c_str());
+      } else if (nb::isinstance<py_tuple>(auth)) {
+        py_tuple auth_tuple = nb::cast<py_tuple>(auth);
+        size_t auth_size = auth_tuple.size();
+
+        if (auth_size < 2 || auth_size > 3) {
+          throw std::invalid_argument("auth tuple must be ('user', 'pass') or "
+                                      "('user', 'pass', 'type')");
+        }
+
+        string user = get_as_string(auth_tuple[0]);
+        string pass = get_as_string(auth_tuple[1]);
+        string userpwd = user + ":" + pass;
+
+        curl_easy_setopt(easy, CURLOPT_USERPWD, userpwd.c_str());
+
+        long auth_code = CURLAUTH_BASIC;
+
+        if (auth_size == 3) {
+          string type_str = get_as_string(auth_tuple[2]);
+          std::transform(type_str.begin(), type_str.end(), type_str.begin(),
+                         [](unsigned char c) { return std::tolower(c); });
+
+          if (type_str == "basic") {
+            auth_code = CURLAUTH_BASIC;
+          } else if (type_str == "digest") {
+            auth_code = CURLAUTH_DIGEST;
+          } else if (type_str == "digest_ie") {
+            auth_code = CURLAUTH_DIGEST_IE;
+          } else if (type_str == "ntlm") {
+            auth_code = CURLAUTH_NTLM;
+          } else if (type_str == "any") {
+            auth_code = CURLAUTH_ANY;
+          } else {
+            throw std::invalid_argument("Unknown auth type: " + type_str);
+          }
+        }
+
+        curl_easy_setopt(easy, CURLOPT_HTTPAUTH, auth_code);
+
+      } else {
+        throw std::invalid_argument("auth must be a tuple or string");
+      }
     }
 
     if (!params.is_none()) {
@@ -159,8 +209,8 @@ RedC::request(const char *method, const char *url, const py_object &params,
 
       curl_url_set(urlp, CURLUPART_URL, url, 0);
 
-      auto append_pair = [&](const std::string &k, const std::string &v) {
-        std::string pair = k + "=" + v;
+      auto append_pair = [&](const string &k, const string &v) {
+        string pair = k + "=" + v;
         CURLUcode rc = curl_url_set(urlp, CURLUPART_QUERY, pair.c_str(),
                                     CURLU_APPENDQUERY | CURLU_URLENCODE);
 
@@ -170,7 +220,7 @@ RedC::request(const char *method, const char *url, const py_object &params,
         }
       };
 
-      auto handle_value = [&](const std::string &key, nb::handle value) {
+      auto handle_value = [&](const string &key, nb::handle value) {
         if (nb::isinstance<py_list>(value) || nb::isinstance<py_tuple>(value)) {
           for (auto v : value) {
             append_pair(key, get_as_string(v));
@@ -183,7 +233,7 @@ RedC::request(const char *method, const char *url, const py_object &params,
       if (nb::isinstance<py_dict>(params)) {
         py_dict d = nb::borrow<py_dict>(params);
         for (auto item : d) {
-          std::string k = get_as_string(item.first);
+          string k = get_as_string(item.first);
           handle_value(k, item.second);
         }
 
@@ -197,13 +247,13 @@ RedC::request(const char *method, const char *url, const py_object &params,
                 "curl_url(): params tuple must be (key, value)");
           }
 
-          std::string k = get_as_string(t[0]);
+          string k = get_as_string(t[0]);
           handle_value(k, t[1]);
         }
 
       } else if (nb::isinstance<py_bytes>(params) ||
                  nb::isinstance<py_str>(params)) {
-        std::string raw = get_as_string(params);
+        string raw = get_as_string(params);
 
         CURLUcode rc =
             curl_url_set(urlp, CURLUPART_QUERY, raw.c_str(), CURLU_APPENDQUERY);
@@ -589,7 +639,8 @@ NB_MODULE(redc_ext, m) {
            arg("data") = nb::none(), arg("files") = nb::none(),
            arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,
-           arg("proxy_url") = "", arg("verify") = true, arg("cert") = "",
+           arg("proxy_url") = "", arg("auth") = nb::none(),
+           arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false)
       .def("close", &RedC::close, nb::call_guard<nb::gil_scoped_release>());
