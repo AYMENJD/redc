@@ -2,6 +2,7 @@
 #include "utils/curl_utils.h"
 #include "utils/memoryview.h"
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 
 static CurlGlobalInit g;
@@ -743,6 +744,41 @@ size_t RedC::write_callback(char *data, size_t size, size_t nmemb,
   return total_size;
 }
 
+string RedC::redc_curl_version() {
+  std::ostringstream version_str;
+
+  version_str << curl_version() << "\n";
+
+  curl_version_info_data *info = curl_version_info(CURLVERSION_NOW);
+
+#ifdef LIBCURL_TIMESTAMP
+  version_str << "Release-Date: " << LIBCURL_TIMESTAMP << "\n";
+#endif
+
+  if (info->protocols && info->protocols[0]) {
+    version_str << "Protocols:";
+    for (const char *const *p = info->protocols; *p; ++p)
+      version_str << " " << *p;
+    version_str << "\n";
+  }
+
+  if (info->feature_names && info->feature_names[0]) {
+    std::vector<std::string> feats;
+    for (const char *const *f = info->feature_names; *f; ++f)
+      feats.emplace_back(*f);
+
+    std::sort(feats.begin(), feats.end(),
+              [](const std::string &a, const std::string &b) { return a < b; });
+
+    version_str << "Features:";
+    for (auto &f : feats)
+      version_str << " " << f;
+    version_str << "\n";
+  }
+
+  return version_str.str();
+}
+
 int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
   Py_VISIT(Py_TYPE(self));
   if (!nb::inst_ready(self))
@@ -777,6 +813,7 @@ NB_MODULE(redc_ext, m) {
            arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false)
-
+      .def("curl_version", &RedC::redc_curl_version,
+           nb::call_guard<nb::gil_scoped_release>())
       .def("close", &RedC::close, nb::call_guard<nb::gil_scoped_release>());
 }

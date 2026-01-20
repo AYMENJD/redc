@@ -116,6 +116,8 @@ public:
       const py_object &progress_callback = nb::none(),
       const bool &verbose = false);
 
+  string redc_curl_version();
+
 private:
   int still_running_{0};
   long buffer_size_;

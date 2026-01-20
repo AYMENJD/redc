@@ -1,4 +1,5 @@
 import asyncio
+from functools import lru_cache
 from typing import BinaryIO, Union
 from urllib.parse import urlencode
 
@@ -954,6 +955,12 @@ class Client:
             cert=cert,
             verbose=self.force_verbose or verbose,
         )
+
+    @property
+    @lru_cache
+    def curl_version(self) -> str:
+        """Return current installed curl version info"""
+        return self.__redc_ext.curl_version()
 
     async def close(self):
         """
