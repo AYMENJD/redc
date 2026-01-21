@@ -401,6 +401,9 @@ RedC::request(const char *method, const char *url, const py_object &params,
             }
           } else if (nb::isinstance<py_str>(value)) {
             curl_mime_filedata(part, get_as_string(value).c_str());
+          } else if (nb::isinstance<py_bytes>(value)) {
+            handle_content(part, value);
+            curl_mime_filename(part, field_name.c_str());
           } else if (nb::hasattr(value, "readinto")) {
             if (nb::hasattr(value, "name")) {
               try {
@@ -408,6 +411,8 @@ RedC::request(const char *method, const char *url, const py_object &params,
                 curl_mime_filename(part, fn.c_str());
               } catch (...) {
               }
+            } else {
+              curl_mime_filename(part, field_name.c_str());
             }
             handle_content(part, value);
           }
