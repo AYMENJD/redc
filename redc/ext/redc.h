@@ -1,6 +1,7 @@
 #ifndef REDC_H
 #define REDC_H
 
+#include <algorithm>
 #include <atomic>
 #include <cstring>
 #include <list>
@@ -15,7 +16,8 @@
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
 
-#include "utils/concurrentqueue.h"
+#include "utils/readerwriterqueue.h"
+
 #include "utils/curl_utils.h"
 
 namespace nb = nanobind;
@@ -135,19 +137,15 @@ private:
   std::thread worker_thread_;
   std::atomic<bool> running_{false};
 
-  moodycamel::ConcurrentQueue<CURL *> handle_pool_;
-  moodycamel::ConsumerToken ct_pool_;
-  moodycamel::ProducerToken pt_pool_main_;
-
-  moodycamel::ConcurrentQueue<CURL *> queue_;
-  moodycamel::ProducerToken pt_queue_;
+  moodycamel::ReaderWriterQueue<CURL *> handle_pool_;
+  moodycamel::ReaderWriterQueue<CURL *> queue_;
 
   void worker_loop();
   void cleanup();
   void CHECK_RUNNING();
 
   CURL *get_handle();
-  void release_handle(CURL *easy, moodycamel::ProducerToken &pt);
+  void release_handle(CURL *easy);
 
   static size_t read_callback(char *buffer, size_t size, size_t nitems,
                               Request *clientp);
