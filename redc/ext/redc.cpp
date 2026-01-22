@@ -292,36 +292,36 @@ py_object RedC::request(const char *method, const char *url,
     py_object future{loop_.attr("create_future")()};
 
     lock.lock();
-    auto [it, inserted] = transfers_.emplace(easy, Data{});
-    Data &d = it->second;
-    d.future = future;
-    d.loop = loop_;
-    d.stream_callback = stream_callback;
-    d.progress_callback = progress_callback;
-    d.has_stream_callback = !stream_callback.is_none() && !is_nobody;
-    d.has_progress_callback = !progress_callback.is_none() && !is_nobody;
+    auto [it, inserted] = transfers_.emplace(easy, Request{});
+    Request &r = it->second;
+    r.future = future;
+    r.loop = loop_;
+    r.stream_callback = stream_callback;
+    r.progress_callback = progress_callback;
+    r.has_stream_callback = !stream_callback.is_none() && !is_nobody;
+    r.has_progress_callback = !progress_callback.is_none() && !is_nobody;
 
     lock.unlock();
 
     if (!raw_data.is_none()) {
       py_bytes raw_bytes = nb::cast<py_bytes>(raw_data);
 
-      d.raw_data = raw_bytes;
+      r.raw_data = raw_bytes;
       curl_easy_setopt(easy, CURLOPT_POSTFIELDS, raw_bytes.c_str());
       curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE,
                        (curl_off_t)raw_bytes.size());
     } else if (!files.is_none()) {
-      d.curl_mime_.mime = curl_mime_init(easy);
+      r.curl_mime_.mime = curl_mime_init(easy);
 
       if (!data.is_none()) {
         if (nb::isinstance<py_dict>(data)) {
           py_dict dict_data = nb::borrow<py_dict>(data);
           for (auto item : dict_data) {
-            curl_mimepart *part = curl_mime_addpart(d.curl_mime_.mime);
+            curl_mimepart *part = curl_mime_addpart(r.curl_mime_.mime);
             string k = get_as_string(item.first);
 
             string &v =
-                d.mime_data_store.emplace_back(get_as_string(item.second));
+                r.mime_data_store.emplace_back(get_as_string(item.second));
 
             curl_mime_name(part, k.c_str());
             curl_mime_data(part, v.c_str(), CURL_ZERO_TERMINATED);
@@ -331,10 +331,10 @@ py_object RedC::request(const char *method, const char *url,
           for (auto item : data) {
             py_tuple t = nb::cast<py_tuple>(item);
             if (t.size() == 2) {
-              curl_mimepart *part = curl_mime_addpart(d.curl_mime_.mime);
+              curl_mimepart *part = curl_mime_addpart(r.curl_mime_.mime);
               string k = get_as_string(t[0]);
 
-              string &v = d.mime_data_store.emplace_back(get_as_string(t[1]));
+              string &v = r.mime_data_store.emplace_back(get_as_string(t[1]));
 
               curl_mime_name(part, k.c_str());
               curl_mime_data(part, v.c_str(), CURL_ZERO_TERMINATED);
@@ -346,15 +346,15 @@ py_object RedC::request(const char *method, const char *url,
       auto handle_content = [&](curl_mimepart *part, nb::handle content) {
         if (nb::isinstance<py_bytes>(content)) {
           string &b_str =
-              d.mime_data_store.emplace_back(get_as_string(content));
+              r.mime_data_store.emplace_back(get_as_string(content));
           curl_mime_data(part, b_str.c_str(), b_str.size());
         } else if (nb::isinstance<py_str>(content)) {
           string &s_str =
-              d.mime_data_store.emplace_back(nb::cast<string>(content));
+              r.mime_data_store.emplace_back(nb::cast<string>(content));
           curl_mime_data(part, s_str.c_str(), CURL_ZERO_TERMINATED);
         } else if (nb::hasattr(content, "readinto")) {
-          d.mime_streams.push_back(nb::borrow<py_object>(content));
-          py_object *stream_ptr = &d.mime_streams.back();
+          r.mime_streams.push_back(nb::borrow<py_object>(content));
+          py_object *stream_ptr = &r.mime_streams.back();
 
           curl_off_t size = -1;
           if (nb::hasattr(content, "__len__")) {
@@ -374,7 +374,7 @@ py_object RedC::request(const char *method, const char *url,
           string field_name = get_as_string(item.first);
           nb::handle value = item.second;
 
-          curl_mimepart *part = curl_mime_addpart(d.curl_mime_.mime);
+          curl_mimepart *part = curl_mime_addpart(r.curl_mime_.mime);
           curl_mime_name(part, field_name.c_str());
 
           if (nb::isinstance<py_tuple>(value)) {
@@ -424,13 +424,13 @@ py_object RedC::request(const char *method, const char *url,
           }
         }
       }
-      curl_easy_setopt(easy, CURLOPT_MIMEPOST, d.curl_mime_.mime);
+      curl_easy_setopt(easy, CURLOPT_MIMEPOST, r.curl_mime_.mime);
     } else if (!data.is_none()) {
       if (nb::hasattr(data, "readinto")) {
-        d.body_stream = data;
+        r.body_stream = data;
         curl_easy_setopt(easy, CURLOPT_UPLOAD, 1L);
         curl_easy_setopt(easy, CURLOPT_READFUNCTION, &RedC::read_callback);
-        curl_easy_setopt(easy, CURLOPT_READDATA, &d);
+        curl_easy_setopt(easy, CURLOPT_READDATA, &r);
 
         if (nb::hasattr(data, "__len__")) {
           size_t size = nb::cast<size_t>(data.attr("__len__")());
@@ -439,7 +439,7 @@ py_object RedC::request(const char *method, const char *url,
       } else if (nb::isinstance<py_dict>(data) ||
                  nb::isinstance<py_list>(data) ||
                  nb::isinstance<py_tuple>(data)) {
-        string &buf = d.post_data_buffer;
+        string &buf = r.post_data_buffer;
 
         auto encode_append = [&](const string &k, const string &v) {
           if (!buf.empty()) {
@@ -493,15 +493,15 @@ py_object RedC::request(const char *method, const char *url,
     }
 
     lock.lock();
-    d.request_headers = std::move(slist_headers);
+    r.request_headers = std::move(slist_headers);
 
-    curl_easy_setopt(easy, CURLOPT_HEADERDATA, &d);
+    curl_easy_setopt(easy, CURLOPT_HEADERDATA, &r);
 
     if (!is_nobody) {
-      curl_easy_setopt(easy, CURLOPT_WRITEDATA, &d);
+      curl_easy_setopt(easy, CURLOPT_WRITEDATA, &r);
 
-      if (d.has_progress_callback) {
-        curl_easy_setopt(easy, CURLOPT_XFERINFODATA, &d);
+      if (r.has_progress_callback) {
+        curl_easy_setopt(easy, CURLOPT_XFERINFODATA, &r);
         curl_easy_setopt(easy, CURLOPT_NOPROGRESS, 0L);
         curl_easy_setopt(easy, CURLOPT_XFERINFOFUNCTION,
                          &RedC::progress_callback);
@@ -550,11 +550,11 @@ void RedC::worker_loop() {
       lock.unlock();
 
       if (!node.empty()) {
-        Data &data = node.mapped();
+        Request &request = node.mapped();
         acq_gil gil;
         call_soon_threadsafe_(
-            nb::cpp_function([data = std::move(data), mres]() {
-              data.future.attr("set_result")(
+            nb::cpp_function([request = std::move(request), mres]() {
+              request.future.attr("set_result")(
                   nb::make_tuple(-1, nb::none(), nb::none(), (int)mres,
                                  curl_multi_strerror(mres)));
             }));
@@ -624,7 +624,7 @@ void RedC::worker_loop() {
 
       for (auto &req : result_batch) {
         call_soon_threadsafe_(
-            nb::cpp_function([data = std::move(req.data), res = req.res,
+            nb::cpp_function([request = std::move(req.request), res = req.res,
                               response_code = req.response_code]() {
               /*
                * Result is allways Tuple:
@@ -647,14 +647,14 @@ void RedC::worker_loop() {
               if (res == CURLE_OK) {
                 result = nb::make_tuple(
                     response_code,
-                    py_bytes(data.headers.data(), data.headers.size()),
-                    py_bytes(data.response.data(), data.response.size()),
+                    py_bytes(request.headers.data(), request.headers.size()),
+                    py_bytes(request.response.data(), request.response.size()),
                     (int)res, nb::none());
               } else {
                 result = nb::make_tuple(-1, nb::none(), nb::none(), (int)res,
                                         curl_easy_strerror(res));
               }
-              data.future.attr("set_result")(std::move(result));
+              request.future.attr("set_result")(std::move(result));
             }));
       }
     }
@@ -668,8 +668,8 @@ void RedC::cleanup() {
   std::vector<py_object> futures;
   futures.reserve(transfers_.size());
 
-  for (auto &[easy, data] : transfers_) {
-    futures.push_back(data.future);
+  for (auto &[easy, request] : transfers_) {
+    futures.push_back(request.future);
     curl_multi_remove_handle(multi_handle_, easy);
     curl_easy_cleanup(easy);
   }
@@ -694,7 +694,7 @@ void RedC::CHECK_RUNNING() {
 }
 
 size_t RedC::read_callback(char *buffer, size_t size, size_t nitems,
-                           Data *clientp) {
+                           Request *clientp) {
   acq_gil gil;
   if (clientp->body_stream.is_none()) {
     return 0;
@@ -719,13 +719,13 @@ size_t RedC::mime_read_callback(char *buffer, size_t size, size_t nitems,
 }
 
 size_t RedC::header_callback(char *buffer, size_t size, size_t nitems,
-                             Data *clientp) {
+                             Request *clientp) {
   size_t total_size = size * nitems;
   clientp->headers.insert(clientp->headers.end(), buffer, buffer + total_size);
   return total_size;
 }
 
-size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal,
+size_t RedC::progress_callback(Request *clientp, curl_off_t dltotal,
                                curl_off_t dlnow, curl_off_t ultotal,
                                curl_off_t ulnow) {
   if (clientp->has_progress_callback) {
@@ -741,7 +741,7 @@ size_t RedC::progress_callback(Data *clientp, curl_off_t dltotal,
 }
 
 size_t RedC::write_callback(char *data, size_t size, size_t nmemb,
-                            Data *clientp) {
+                            Request *clientp) {
   size_t total_size = size * nmemb;
 
   if (clientp->has_stream_callback) {

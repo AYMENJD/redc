@@ -35,19 +35,19 @@ using string = std::string;
 
 inline bool isNullOrEmpty(const char *str) { return !str || !*str; }
 
-struct Data {
-  Data() {
+struct Request {
+  Request() {
     headers.reserve(1024);
     response.reserve(4096);
   }
 
   // Delete copy, allow move
-  Data(const Data &) = delete;
-  Data &operator=(const Data &) = delete;
-  Data(Data &&) = default;
-  Data &operator=(Data &&) = default;
+  Request(const Request &) = delete;
+  Request &operator=(const Request &) = delete;
+  Request(Request &&) = default;
+  Request &operator=(Request &&) = default;
 
-  ~Data() = default;
+  ~Request() = default;
 
   void clear() {
     future = {};
@@ -92,7 +92,7 @@ struct Data {
 };
 
 struct Result {
-  Data data;
+  Request request;
   CURLcode res;
   long response_code;
 };
@@ -129,7 +129,7 @@ private:
 
   CURLM *multi_handle_;
 
-  std::unordered_map<CURL *, Data> transfers_;
+  std::unordered_map<CURL *, Request> transfers_;
   std::vector<CURL *> handle_pool_;
 
   std::mutex mutex_;
@@ -147,16 +147,16 @@ private:
   void release_handle(CURL *easy);
 
   static size_t read_callback(char *buffer, size_t size, size_t nitems,
-                              Data *clientp);
+                              Request *clientp);
   static size_t mime_read_callback(char *buffer, size_t size, size_t nitems,
                                    void *arg);
   static size_t header_callback(char *buffer, size_t size, size_t nitems,
-                                Data *clientp);
-  static size_t progress_callback(Data *clientp, curl_off_t dltotal,
+                                Request *clientp);
+  static size_t progress_callback(Request *clientp, curl_off_t dltotal,
                                   curl_off_t dlnow, curl_off_t ultotal,
                                   curl_off_t ulnow);
   static size_t write_callback(char *data, size_t size, size_t nmemb,
-                               Data *clientp);
+                               Request *clientp);
 
   friend int redc_tp_traverse(PyObject *, visitproc, void *);
   friend int redc_tp_clear(PyObject *);
