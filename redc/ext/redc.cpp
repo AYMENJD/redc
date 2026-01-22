@@ -717,6 +717,13 @@ size_t RedC::write_callback(char *data, size_t size, size_t nmemb,
       return 0; // abort transfer
     }
   } else {
+    if (clientp->response.size() + total_size > MAX_RESPONSE_SIZE) {
+      std::cerr << "Response exceeded maximum allowed size of "
+                << MAX_RESPONSE_SIZE << " bytes. "
+                << "Use a stream callback instead" << std::endl;
+      return 0; // abort transfer
+    }
+
     clientp->response.insert(clientp->response.end(), data, data + total_size);
   }
 

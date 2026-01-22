@@ -35,6 +35,9 @@ using py_dict = nb::dict;
 using arg = nb::arg;
 using string = std::string;
 
+size_t MAX_RESPONSE_SIZE =
+    16 * 1024 * 1024; // 16MB, max response size for non streamed responses
+
 inline bool isNullOrEmpty(const char *str) { return !str || !*str; }
 
 struct Request {
