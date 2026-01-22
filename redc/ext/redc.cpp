@@ -7,7 +7,9 @@
 
 static CurlGlobalInit g;
 
-RedC::RedC(const long &buffer) : queue_(), pt_(queue_) {
+RedC::RedC(const long &buffer)
+    : queue_(1024), pt_queue_(queue_), handle_pool_(1024),
+      ct_pool_(handle_pool_), pt_pool_main_(handle_pool_) {
   {
     acq_gil gil;
     asyncio_ = nb::module_::import_("asyncio");
@@ -28,7 +30,6 @@ RedC::RedC(const long &buffer) : queue_(), pt_(queue_) {
   curl_multi_setopt(multi_handle_, CURLMOPT_MAXCONNECTS, 2048L);
   curl_multi_setopt(multi_handle_, CURLMOPT_MAX_CONCURRENT_STREAMS, 100L);
 
-  handle_pool_.reserve(1024);
   transfers_.reserve(1024);
 
   try {
@@ -45,14 +46,13 @@ RedC::~RedC() { this->close(); }
 bool RedC::is_running() { return running_; }
 
 CURL *RedC::get_handle() {
-  if (!handle_pool_.empty()) {
-    CURL *easy = handle_pool_.back();
-    handle_pool_.pop_back();
+  CURL *easy = nullptr;
+  if (handle_pool_.try_dequeue(ct_pool_, easy)) {
     curl_easy_reset(easy);
     return easy;
   }
 
-  CURL *easy = curl_easy_init();
+  easy = curl_easy_init();
   if (!easy) {
     throw std::runtime_error("Failed to create CURL easy handle");
   }
@@ -60,7 +60,9 @@ CURL *RedC::get_handle() {
   return easy;
 }
 
-void RedC::release_handle(CURL *easy) { handle_pool_.push_back(easy); }
+void RedC::release_handle(CURL *easy, moodycamel::ProducerToken &pt) {
+  handle_pool_.enqueue(pt, easy);
+}
 
 void RedC::close() {
   if (running_) {
@@ -105,9 +107,7 @@ py_object RedC::request(const char *method, const char *url,
     throw std::invalid_argument("method or url must be non-empty");
   }
 
-  std::unique_lock<std::mutex> lock(mutex_);
   CURL *easy = get_handle();
-  lock.unlock();
 
   const bool is_head = (strcmp(method, "HEAD") == 0);
   const bool is_nobody = is_head || (strcmp(method, "OPTIONS") == 0);
@@ -291,7 +291,7 @@ py_object RedC::request(const char *method, const char *url,
 
     py_object future{loop_.attr("create_future")()};
 
-    lock.lock();
+    std::unique_lock<std::mutex> lock(mutex_);
     auto [it, inserted] = transfers_.emplace(easy, Request{});
     Request &r = it->second;
     r.future = future;
@@ -300,7 +300,6 @@ py_object RedC::request(const char *method, const char *url,
     r.progress_callback = progress_callback;
     r.has_stream_callback = !stream_callback.is_none() && !is_nobody;
     r.has_progress_callback = !progress_callback.is_none() && !is_nobody;
-
     lock.unlock();
 
     if (!raw_data.is_none()) {
@@ -511,7 +510,7 @@ py_object RedC::request(const char *method, const char *url,
     }
     lock.unlock();
 
-    queue_.enqueue(pt_, easy);
+    queue_.enqueue(pt_queue_, easy);
 
     curl_multi_wakeup(multi_handle_);
 
@@ -521,14 +520,17 @@ py_object RedC::request(const char *method, const char *url,
     {
       std::lock_guard<std::mutex> lk(mutex_);
       transfers_.erase(easy);
-      release_handle(easy);
     }
+
+    release_handle(easy, pt_pool_main_);
     throw;
   }
 }
 
 void RedC::worker_loop() {
-  moodycamel::ConsumerToken ct(queue_);
+  moodycamel::ConsumerToken ct_queue(queue_);
+
+  moodycamel::ProducerToken pt_pool_worker(handle_pool_);
 
   std::vector<std::pair<CURL *, CURLcode>> done_handles;
   std::vector<Result> result_batch;
@@ -537,7 +539,7 @@ void RedC::worker_loop() {
     CURL *e;
     bool added_any = false;
 
-    while (queue_.try_dequeue(ct, e)) {
+    while (queue_.try_dequeue(ct_queue, e)) {
       const CURLMcode mres = curl_multi_add_handle(multi_handle_, e);
 
       if (mres == CURLM_OK) {
@@ -560,10 +562,7 @@ void RedC::worker_loop() {
             }));
       }
 
-      {
-        std::lock_guard<std::mutex> lk(mutex_);
-        release_handle(e);
-      }
+      release_handle(e, pt_pool_worker);
     }
 
     if (added_any) {
@@ -597,25 +596,22 @@ void RedC::worker_loop() {
     result_batch.clear();
     result_batch.reserve(done_handles.size());
 
-    {
-      std::lock_guard<std::mutex> lock(mutex_);
+    for (auto &[easy_handle, res] : done_handles) {
+      long response_code = 0;
+      if (res == CURLE_OK) {
+        curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE, &response_code);
+      }
 
-      for (auto &[easy_handle, res] : done_handles) {
-        long response_code = 0;
-        if (res == CURLE_OK) {
-          curl_easy_getinfo(easy_handle, CURLINFO_RESPONSE_CODE,
-                            &response_code);
-        }
+      std::unique_lock<std::mutex> lock(mutex_);
+      auto node = transfers_.extract(easy_handle);
+      lock.unlock();
 
-        auto node = transfers_.extract(easy_handle);
+      curl_multi_remove_handle(multi_handle_, easy_handle);
 
-        curl_multi_remove_handle(multi_handle_, easy_handle);
-        release_handle(easy_handle);
+      release_handle(easy_handle, pt_pool_worker);
 
-        if (!node.empty()) {
-          result_batch.push_back(
-              {std::move(node.mapped()), res, response_code});
-        }
+      if (!node.empty()) {
+        result_batch.push_back({std::move(node.mapped()), res, response_code});
       }
     }
 
@@ -674,13 +670,12 @@ void RedC::cleanup() {
     curl_easy_cleanup(easy);
   }
   transfers_.clear();
+  lock.unlock();
 
-  for (CURL *easy : handle_pool_) {
+  CURL *easy;
+  while (handle_pool_.try_dequeue(ct_pool_, easy)) {
     curl_easy_cleanup(easy);
   }
-  handle_pool_.clear();
-
-  lock.unlock();
 
   for (auto &future : futures) {
     call_soon_threadsafe_(future.attr("cancel"));

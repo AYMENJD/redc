@@ -130,21 +130,24 @@ private:
   CURLM *multi_handle_;
 
   std::unordered_map<CURL *, Request> transfers_;
-  std::vector<CURL *> handle_pool_;
 
   std::mutex mutex_;
   std::thread worker_thread_;
   std::atomic<bool> running_{false};
 
+  moodycamel::ConcurrentQueue<CURL *> handle_pool_;
+  moodycamel::ConsumerToken ct_pool_;
+  moodycamel::ProducerToken pt_pool_main_;
+
   moodycamel::ConcurrentQueue<CURL *> queue_;
-  moodycamel::ProducerToken pt_;
+  moodycamel::ProducerToken pt_queue_;
 
   void worker_loop();
   void cleanup();
   void CHECK_RUNNING();
 
   CURL *get_handle();
-  void release_handle(CURL *easy);
+  void release_handle(CURL *easy, moodycamel::ProducerToken &pt);
 
   static size_t read_callback(char *buffer, size_t size, size_t nitems,
                               Request *clientp);
