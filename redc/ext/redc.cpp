@@ -763,6 +763,7 @@ int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
   if (!nb::inst_ready(self))
     return 0;
   RedC *me = nb::inst_ptr<RedC>(self);
+  Py_VISIT(me->asyncio_.ptr());
   Py_VISIT(me->loop_.ptr());
   Py_VISIT(me->call_soon_threadsafe_.ptr());
   return 0;
@@ -770,6 +771,7 @@ int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
 
 int redc_tp_clear(PyObject *self) {
   RedC *c = nb::inst_ptr<RedC>(self);
+  c->asyncio_ = {};
   c->loop_ = {};
   c->call_soon_threadsafe_ = {};
   return 0;
