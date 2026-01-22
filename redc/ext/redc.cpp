@@ -78,25 +78,27 @@ void RedC::close() {
 }
 
 inline string get_as_string(const nb::handle &h) {
+  if (nb::isinstance<py_str>(h)) {
+    return nb::cast<string>(h);
+  }
+
   if (nb::isinstance<py_bytes>(h)) {
     auto b = nb::cast<py_bytes>(h);
     return string(b.c_str(), b.size());
   }
-  if (nb::isinstance<py_str>(h)) {
-    return nb::cast<string>(h);
-  }
   return nb::cast<string>(py_str(h));
 }
 
-py_object
-RedC::request(const char *method, const char *url, const py_object &params,
-              std::optional<std::string_view> raw_data, const py_object &data,
-              const py_object &files, const py_object &headers,
-              const long &timeout_ms, const long &connect_timeout_ms,
-              const bool &allow_redirect, const char *proxy_url,
-              const py_object &auth, const bool &verify, const char *cert,
-              const py_object &stream_callback,
-              const py_object &progress_callback, const bool &verbose) {
+py_object RedC::request(const char *method, const char *url,
+                        const py_object &params, const py_object &raw_data,
+                        const py_object &data, const py_object &files,
+                        const py_object &headers, const long &timeout_ms,
+                        const long &connect_timeout_ms,
+                        const bool &allow_redirect, const char *proxy_url,
+                        const py_object &auth, const bool &verify,
+                        const char *cert, const py_object &stream_callback,
+                        const py_object &progress_callback,
+                        const bool &verbose) {
   CHECK_RUNNING();
 
   if (isNullOrEmpty(method) || isNullOrEmpty(url)) {
@@ -159,7 +161,7 @@ RedC::request(const char *method, const char *url, const py_object &params,
 
     if (!auth.is_none()) {
       if (nb::isinstance<py_str>(auth)) {
-        string token = get_as_string(auth);
+        string token = nb::cast<string>(auth);
         curl_easy_setopt(easy, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);
         curl_easy_setopt(easy, CURLOPT_XOAUTH2_BEARER, token.c_str());
       } else if (nb::isinstance<py_tuple>(auth)) {
@@ -298,12 +300,16 @@ RedC::request(const char *method, const char *url, const py_object &params,
     d.progress_callback = progress_callback;
     d.has_stream_callback = !stream_callback.is_none() && !is_nobody;
     d.has_progress_callback = !progress_callback.is_none() && !is_nobody;
+
     lock.unlock();
 
-    if (raw_data.has_value() && !raw_data->empty()) {
-      curl_easy_setopt(easy, CURLOPT_POSTFIELDS, raw_data->data());
+    if (!raw_data.is_none()) {
+      py_bytes raw_bytes = nb::cast<py_bytes>(raw_data);
+
+      d.raw_data = raw_bytes;
+      curl_easy_setopt(easy, CURLOPT_POSTFIELDS, raw_bytes.c_str());
       curl_easy_setopt(easy, CURLOPT_POSTFIELDSIZE_LARGE,
-                       (curl_off_t)raw_data->size());
+                       (curl_off_t)raw_bytes.size());
     } else if (!files.is_none()) {
       d.curl_mime_.mime = curl_mime_init(easy);
 
@@ -344,7 +350,7 @@ RedC::request(const char *method, const char *url, const py_object &params,
           curl_mime_data(part, b_str.c_str(), b_str.size());
         } else if (nb::isinstance<py_str>(content)) {
           string &s_str =
-              d.mime_data_store.emplace_back(get_as_string(content));
+              d.mime_data_store.emplace_back(nb::cast<string>(content));
           curl_mime_data(part, s_str.c_str(), CURL_ZERO_TERMINATED);
         } else if (nb::hasattr(content, "readinto")) {
           d.mime_streams.push_back(nb::borrow<py_object>(content));
@@ -400,7 +406,7 @@ RedC::request(const char *method, const char *url, const py_object &params,
               }
             }
           } else if (nb::isinstance<py_str>(value)) {
-            curl_mime_filedata(part, get_as_string(value).c_str());
+            curl_mime_filedata(part, nb::cast<string>(value).c_str());
           } else if (nb::isinstance<py_bytes>(value)) {
             handle_content(part, value);
             curl_mime_filename(part, field_name.c_str());
@@ -811,7 +817,7 @@ NB_MODULE(redc_ext, m) {
       .def(nb::init<const long &>())
       .def("is_running", &RedC::is_running)
       .def("request", &RedC::request, arg("method"), arg("url"),
-           arg("params") = nb::none(), arg("raw_data") = "",
+           arg("params") = nb::none(), arg("raw_data") = nb::none(),
            arg("data") = nb::none(), arg("files") = nb::none(),
            arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,

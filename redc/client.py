@@ -227,10 +227,10 @@ class Client:
             progress_callback = progress_callback.callback
 
         if form is not None:
-            form = urlencode(form)
+            form = urlencode(form).encode("utf-8")
 
         if json is not None:
-            json = self.__json_encoder(json)
+            json = self.__json_encoder(json, encode=True)
             if headers is None:
                 headers = {}
             headers["Content-Type"] = "application/json"
@@ -266,7 +266,7 @@ class Client:
                     method=method,
                     url=url,
                     params=params,
-                    raw_data=form or json or "",
+                    raw_data=form or json,
                     data=data,
                     files=files,
                     headers=headers,

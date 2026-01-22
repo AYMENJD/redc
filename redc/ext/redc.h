@@ -5,8 +5,6 @@
 #include <cstring>
 #include <list>
 #include <mutex>
-#include <nanobind/stl/optional.h>
-#include <nanobind/stl/string_view.h>
 #include <thread>
 #include <unordered_map>
 #include <vector>
@@ -57,6 +55,8 @@ struct Data {
     stream_callback = {};
     progress_callback = {};
     body_stream = {};
+    raw_data = {};
+
     mime_streams.clear();
     mime_data_store.clear();
 
@@ -74,6 +74,7 @@ struct Data {
   py_object progress_callback{nb::none()};
 
   py_object body_stream{nb::none()};
+  py_bytes raw_data;
 
   std::list<py_object> mime_streams;
   std::list<string> mime_data_store;
@@ -106,7 +107,7 @@ public:
 
   py_object request(
       const char *method, const char *url, const py_object &params = nb::none(),
-      std::optional<std::string_view> raw_data = "",
+      const py_object &raw_data = nb::none(),
       const py_object &data = nb::none(), const py_object &files = nb::none(),
       const py_object &headers = nb::none(), const long &timeout_ms = 60 * 1000,
       const long &connect_timeout_ms = 0, const bool &allow_redirect = true,
