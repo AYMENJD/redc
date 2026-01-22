@@ -7,7 +7,7 @@
 
 static CurlGlobalInit g;
 
-RedC::RedC(const long &buffer) {
+RedC::RedC(const long &buffer) : queue_(), pt_(queue_) {
   {
     acq_gil gil;
     asyncio_ = nb::module_::import_("asyncio");
@@ -511,7 +511,8 @@ py_object RedC::request(const char *method, const char *url,
     }
     lock.unlock();
 
-    queue_.enqueue(easy);
+    queue_.enqueue(pt_, easy);
+
     curl_multi_wakeup(multi_handle_);
 
     return future;
@@ -527,6 +528,8 @@ py_object RedC::request(const char *method, const char *url,
 }
 
 void RedC::worker_loop() {
+  moodycamel::ConsumerToken ct(queue_);
+
   std::vector<std::pair<CURL *, CURLcode>> done_handles;
   std::vector<Result> result_batch;
 
@@ -534,7 +537,7 @@ void RedC::worker_loop() {
     CURL *e;
     bool added_any = false;
 
-    while (queue_.try_dequeue(e)) {
+    while (queue_.try_dequeue(ct, e)) {
       const CURLMcode mres = curl_multi_add_handle(multi_handle_, e);
 
       if (mres == CURLM_OK) {

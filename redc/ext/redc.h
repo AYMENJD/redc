@@ -137,6 +137,7 @@ private:
   std::atomic<bool> running_{false};
 
   moodycamel::ConcurrentQueue<CURL *> queue_;
+  moodycamel::ProducerToken pt_;
 
   void worker_loop();
   void cleanup();
