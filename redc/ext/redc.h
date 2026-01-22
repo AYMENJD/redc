@@ -93,8 +93,13 @@ struct Request {
   std::vector<char> response;
 };
 
+struct PendingRequest {
+  CURL *easy;
+  std::unique_ptr<Request> request;
+};
+
 struct Result {
-  Request request;
+  std::unique_ptr<Request> request;
   CURLcode res;
   long response_code;
 };
@@ -131,17 +136,14 @@ private:
 
   CURLM *multi_handle_;
 
-  std::unordered_map<CURL *, Request> transfers_;
-
   std::mutex mutex_;
   std::thread worker_thread_;
   std::atomic<bool> running_{false};
 
   moodycamel::ReaderWriterQueue<CURL *> handle_pool_;
-  moodycamel::ReaderWriterQueue<CURL *> queue_;
+  moodycamel::ReaderWriterQueue<PendingRequest> queue_;
 
   void worker_loop();
-  void cleanup();
   void CHECK_RUNNING();
 
   CURL *get_handle();
