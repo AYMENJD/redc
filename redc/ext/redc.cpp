@@ -8,7 +8,7 @@
 static CurlGlobalInit g;
 
 RedC::RedC(const long &buffer, const bool &session)
-    : queue_(1024), handle_pool_(1024), session_enabled_(session) {
+    : session_enabled_(session), handle_pool_(1024), queue_(1024) {
   {
     acq_gil gil;
     asyncio_ = nb::module_::import_("asyncio");
