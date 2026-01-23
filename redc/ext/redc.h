@@ -109,17 +109,21 @@ struct Result {
 
 class RedC {
 public:
-  RedC(const long &buffer = 16384);
+  RedC(const long &buffer = 16384, const bool &session = false);
   ~RedC();
 
   bool is_running();
   void close();
 
+  py_list get_cookies(bool netscape = false);
+  void clear_cookies();
+
   py_object request(
       const char *method, const char *url, const py_object &params = nb::none(),
       const py_object &raw_data = nb::none(),
       const py_object &data = nb::none(), const py_object &files = nb::none(),
-      const py_object &headers = nb::none(), const long &timeout_ms = 60 * 1000,
+      const py_object &headers = nb::none(),
+      const py_object &cookies = nb::none(), const long &timeout_ms = 60 * 1000,
       const long &connect_timeout_ms = 0, const bool &allow_redirect = true,
       const char *proxy_url = "", const py_object &auth = nb::none(),
       const bool &verify = true, const char *cert = "",
@@ -132,16 +136,19 @@ public:
 private:
   int still_running_{0};
   long buffer_size_;
+  bool session_enabled_;
 
   py_object asyncio_;
   py_object loop_;
   py_object call_soon_threadsafe_;
 
-  CURLM *multi_handle_;
+  CURLM *multi_handle_{nullptr};
+  CURLSH *share_handle_{nullptr};
 
-  std::mutex mutex_;
   std::thread worker_thread_;
   std::atomic<bool> running_{false};
+
+  std::mutex share_mutex_;
 
   moodycamel::ReaderWriterQueue<CURL *> handle_pool_;
   moodycamel::ReaderWriterQueue<PendingRequest> queue_;
@@ -163,6 +170,12 @@ private:
                                   curl_off_t ulnow);
   static size_t write_callback(char *data, size_t size, size_t nmemb,
                                Request *clientp);
+
+  static void share_lock_cb(CURL *handle, curl_lock_data data,
+                            curl_lock_access access, RedC *self);
+  static void share_unlock_cb(CURL *handle, curl_lock_data data, RedC *self);
+
+  py_dict parse_cookie_string(const char *cookie_line);
 
   friend int redc_tp_traverse(PyObject *, visitproc, void *);
   friend int redc_tp_clear(PyObject *);

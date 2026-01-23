@@ -21,6 +21,7 @@ class Client:
         base_url: str = None,
         buffer_size: int = 16384,
         headers: dict = None,
+        persist_cookies: bool = False,
         timeout: tuple = (30.0, 0.0),
         cert: str = None,
         force_verbose: bool = None,
@@ -46,6 +47,9 @@ class Client:
             headers (``dict``, *optional*):
                 Headers to include in every request. Default is ``None``
 
+            persist_cookies (``bool``, *optional*):
+                Whether to persist cookies across requests. Default is ``False``
+
             timeout (``tuple``, *optional*):
                 A tuple of `(total_timeout, connect_timeout)` in seconds to include in every request. Default is ``(30.0, 0.0)``
 
@@ -65,6 +69,7 @@ class Client:
 
         assert isinstance(base_url, (str, type(None))), "base_url must be string"
         assert isinstance(buffer_size, int), "buffer_size must be int"
+        assert isinstance(persist_cookies, bool), "persist_cookies must be bool"
         assert isinstance(cert, (str, type(None))), "cert must be string"
         assert isinstance(timeout, tuple) and len(timeout) == 2, (
             "timeout must be a tuple of (total_timeout, connect_timeout)"
@@ -87,7 +92,7 @@ class Client:
         self.__cert = cert if isinstance(cert, str) else trustifi.where()
         self.__json_encoder = json_encoder
         self.__loop = asyncio.get_event_loop()
-        self.__redc_ext = RedC(buffer_size)
+        self.__redc_ext = RedC(buffer_size, persist_cookies)
 
         self.__set_default_headers()
 
@@ -112,6 +117,30 @@ class Client:
         """Returns default headers that are set on all requests"""
 
         return self.__default_headers
+
+    @property
+    @lru_cache
+    def curl_version(self) -> str:
+        """Return current installed curl version info"""
+        return self.__redc_ext.curl_version()
+
+    def get_cookies(self, netscape: bool = False) -> Union[list[dict], list[str]]:
+        """Retrieves currently stored session cookies
+
+        Parameters:
+            netscape (``bool``, *optional*):
+                If ``True``, returns raw Netscape-formatted strings; if ``False``, returns dicts. Default is ``False``
+
+        Returns:
+            ``list[dict] | list[str]``
+        """
+
+        return self.__redc_ext.get_cookies(netscape)
+
+    def clear_cookies(self) -> None:
+        """Clears all cookies from the current session"""
+
+        return self.__redc_ext.clear_cookies()
 
     async def request(
         self,
@@ -955,12 +984,6 @@ class Client:
             cert=cert,
             verbose=self.force_verbose or verbose,
         )
-
-    @property
-    @lru_cache
-    def curl_version(self) -> str:
-        """Return current installed curl version info"""
-        return self.__redc_ext.curl_version()
 
     async def close(self):
         """

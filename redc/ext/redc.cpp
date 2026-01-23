@@ -7,7 +7,8 @@
 
 static CurlGlobalInit g;
 
-RedC::RedC(const long &buffer) : queue_(1024), handle_pool_(1024) {
+RedC::RedC(const long &buffer, const bool &session)
+    : queue_(1024), handle_pool_(1024), session_enabled_(session) {
   {
     acq_gil gil;
     asyncio_ = nb::module_::import_("asyncio");
@@ -27,6 +28,20 @@ RedC::RedC(const long &buffer) : queue_(1024), handle_pool_(1024) {
   curl_multi_setopt(multi_handle_, CURLMOPT_MAX_HOST_CONNECTIONS, 64L);
   curl_multi_setopt(multi_handle_, CURLMOPT_MAXCONNECTS, 2048L);
   curl_multi_setopt(multi_handle_, CURLMOPT_MAX_CONCURRENT_STREAMS, 100L);
+
+  if (session_enabled_) {
+    share_handle_ = curl_share_init();
+    if (share_handle_) {
+      curl_share_setopt(share_handle_, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
+      curl_share_setopt(share_handle_, CURLSHOPT_LOCKFUNC, RedC::share_lock_cb);
+      curl_share_setopt(share_handle_, CURLSHOPT_UNLOCKFUNC,
+                        RedC::share_unlock_cb);
+      curl_share_setopt(share_handle_, CURLSHOPT_USERDATA, this);
+    } else {
+      curl_multi_cleanup(multi_handle_);
+      throw std::runtime_error("Failed to create CURL share handle");
+    }
+  }
 
   try {
     running_ = true;
@@ -70,6 +85,116 @@ void RedC::close() {
   }
 }
 
+void RedC::share_lock_cb(CURL *handle, curl_lock_data data,
+                         curl_lock_access access, RedC *self) {
+  if (data == CURL_LOCK_DATA_COOKIE) {
+    self->share_mutex_.lock();
+  }
+}
+
+void RedC::share_unlock_cb(CURL *handle, curl_lock_data data, RedC *self) {
+  if (data == CURL_LOCK_DATA_COOKIE) {
+    self->share_mutex_.unlock();
+  }
+}
+
+py_dict RedC::parse_cookie_string(const char *cookie_line) {
+  // 0: Domain (string)
+  // 1: Include subdomains (boolean: TRUE/FALSE)
+  // 2: Path (string)
+  // 3: Secure (boolean: TRUE/FALSE)
+  // 4: Expires (number: seconds since epoch)
+  // 5: Name (string)
+  // 6: Value (string)
+
+  std::vector<string> parts;
+  std::stringstream ss(cookie_line);
+  string item;
+
+  while (std::getline(ss, item, '\t')) {
+    parts.push_back(item);
+  }
+
+  py_dict cookie;
+  if (parts.size() >= 6) {
+    cookie["domain"] = parts[0];
+    cookie["include_subdomains"] = (parts[1] == "TRUE");
+    cookie["path"] = parts[2];
+    cookie["secure"] = (parts[3] == "TRUE");
+
+    try {
+      cookie["expires"] = std::stoll(parts[4]);
+    } catch (...) {
+      cookie["expires"] = 0;
+    }
+
+    cookie["name"] = parts[5];
+
+    if (parts.size() > 6) {
+      cookie["value"] = parts[6];
+    } else {
+      cookie["value"] = "";
+    }
+  }
+
+  return cookie;
+}
+
+py_list RedC::get_cookies(bool netscape) {
+  if (!session_enabled_ || !share_handle_) {
+    return nb::list();
+  }
+
+  CURL *easy = get_handle();
+  struct curl_slist *cookies = nullptr;
+  py_list result;
+
+  try {
+    curl_easy_setopt(easy, CURLOPT_SHARE, share_handle_);
+
+    CURLcode res = curl_easy_getinfo(easy, CURLINFO_COOKIELIST, &cookies);
+    if (res == CURLE_OK && cookies) {
+      struct curl_slist *nc = cookies;
+      while (nc) {
+        if (netscape) {
+          result.append(nc->data);
+        } else {
+          result.append(parse_cookie_string(nc->data));
+        }
+        nc = nc->next;
+      }
+    }
+
+    if (cookies) {
+      curl_slist_free_all(cookies);
+    }
+  } catch (...) {
+    release_handle(easy);
+    throw;
+  }
+
+  release_handle(easy);
+  return result;
+}
+
+void RedC::clear_cookies() {
+  if (!session_enabled_ || !share_handle_) {
+    return;
+  }
+
+  CURL *easy = get_handle();
+
+  try {
+    curl_easy_setopt(easy, CURLOPT_SHARE, share_handle_);
+    curl_easy_setopt(easy, CURLOPT_COOKIELIST, "ALL");
+  } catch (...) {
+    release_handle(easy);
+    throw;
+  }
+
+  release_handle(easy);
+}
+
 inline string get_as_string(const nb::handle &h) {
   if (nb::isinstance<py_str>(h)) {
     return nb::cast<string>(h);
@@ -85,8 +210,8 @@ inline string get_as_string(const nb::handle &h) {
 py_object RedC::request(const char *method, const char *url,
                         const py_object &params, const py_object &raw_data,
                         const py_object &data, const py_object &files,
-                        const py_object &headers, const long &timeout_ms,
-                        const long &connect_timeout_ms,
+                        const py_object &headers, const py_object &cookies,
+                        const long &timeout_ms, const long &connect_timeout_ms,
                         const bool &allow_redirect, const char *proxy_url,
                         const py_object &auth, const bool &verify,
                         const char *cert, const py_object &stream_callback,
@@ -104,6 +229,10 @@ py_object RedC::request(const char *method, const char *url,
   const bool is_nobody = is_head || (strcmp(method, "OPTIONS") == 0);
 
   try {
+    if (session_enabled_ && share_handle_) {
+      curl_easy_setopt(easy, CURLOPT_SHARE, share_handle_);
+    }
+
     curl_easy_setopt(easy, CURLOPT_URL, url);
     curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method);
     curl_easy_setopt(easy, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_3);
@@ -115,6 +244,7 @@ py_object RedC::request(const char *method, const char *url,
     curl_easy_setopt(easy, CURLOPT_ACCEPT_ENCODING, "");
     curl_easy_setopt(easy, CURLOPT_BUFFERSIZE, buffer_size_);
 
+    curl_easy_setopt(easy, CURLOPT_COOKIEFILE, "");
     curl_easy_setopt(easy, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
 
     curl_easy_setopt(easy, CURLOPT_TIMEOUT_MS, timeout_ms);
@@ -148,6 +278,35 @@ py_object RedC::request(const char *method, const char *url,
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
     } else if (!isNullOrEmpty(cert)) {
       curl_easy_setopt(easy, CURLOPT_CAINFO, cert);
+    }
+
+    if (!cookies.is_none()) {
+      string cookie_buf;
+      py_dict cookie_dict;
+
+      if (nb::isinstance<py_dict>(cookies)) {
+        cookie_dict = nb::borrow<py_dict>(cookies);
+      } else {
+        cookie_dict = nb::cast<py_dict>(cookies);
+      }
+
+      for (auto item : cookie_dict) {
+        string k = get_as_string(item.first);
+        string v = get_as_string(item.second);
+
+        if (k.empty()) {
+          continue;
+        }
+        if (!cookie_buf.empty()) {
+          cookie_buf += "; ";
+        }
+
+        cookie_buf += k + "=" + v;
+      }
+
+      if (!cookie_buf.empty()) {
+        curl_easy_setopt(easy, CURLOPT_COOKIE, cookie_buf.c_str());
+      }
     }
 
     if (!auth.is_none()) {
@@ -502,7 +661,6 @@ py_object RedC::request(const char *method, const char *url,
     curl_multi_wakeup(multi_handle_);
 
     return future;
-
   } catch (...) {
     release_handle(easy);
     throw;
@@ -790,17 +948,20 @@ PyType_Slot slots[] = {{Py_tp_traverse, (void *)redc_tp_traverse},
 
 NB_MODULE(redc_ext, m) {
   nb::class_<RedC>(m, "RedC", nb::type_slots(slots))
-      .def(nb::init<const long &>())
+      .def(nb::init<const long &, const bool &>(), arg("buffer_size"),
+           arg("persist_cookies") = false)
       .def("is_running", &RedC::is_running)
       .def("request", &RedC::request, arg("method"), arg("url"),
            arg("params") = nb::none(), arg("raw_data") = nb::none(),
            arg("data") = nb::none(), arg("files") = nb::none(),
-           arg("headers") = nb::none(), arg("timeout_ms") = 60 * 1000,
-           arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,
-           arg("proxy_url") = "", arg("auth") = nb::none(),
-           arg("verify") = true, arg("cert") = "",
+           arg("headers") = nb::none(), arg("cookies") = nb::none(),
+           arg("timeout_ms") = 60 * 1000, arg("connect_timeout_ms") = 0,
+           arg("allow_redirect") = true, arg("proxy_url") = "",
+           arg("auth") = nb::none(), arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false)
+      .def("get_cookies", &RedC::get_cookies, arg("netscape") = false)
+      .def("clear_cookies", &RedC::clear_cookies)
       .def("curl_version", &RedC::redc_curl_version,
            nb::call_guard<nb::gil_scoped_release>())
       .def("close", &RedC::close, nb::call_guard<nb::gil_scoped_release>());
