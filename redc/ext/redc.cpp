@@ -750,10 +750,14 @@ void RedC::worker_loop() {
     if (!result_batch.empty()) {
       acq_gil gil;
 
-      for (auto &req : result_batch) {
-        call_soon_threadsafe_(
-            nb::cpp_function([request = std::move(req.request), res = req.res,
-                              response_code = req.response_code]() {
+      call_soon_threadsafe_(
+          nb::cpp_function([batch = std::make_unique<std::vector<Result>>(
+                                std::move(result_batch))]() {
+            for (auto &req : *batch) {
+              auto &request = req.request;
+              auto res = req.res;
+              auto response_code = req.response_code;
+
               /*
                * Result is allways Tuple:
                *
@@ -764,14 +768,11 @@ void RedC::worker_loop() {
                *
                * 2: The actual response data as bytes; can be null
                *
-               * 3: cURL return code. This indicates the result code of the
-               cURL
-               * operation. See:
-               https://curl.se/libcurl/c/libcurl-errors.html
+               * 3: cURL return code. This indicates the result code of the cURL
+               * operation. See: https://curl.se/libcurl/c/libcurl-errors.html
                *
                * 4: cURL error message string; can be null
                */
-
               py_object result;
 
               if (res == CURLE_OK) {
@@ -787,8 +788,8 @@ void RedC::worker_loop() {
               }
 
               request->future.attr("set_result")(std::move(result));
-            }));
-      }
+            }
+          }));
     }
   }
 

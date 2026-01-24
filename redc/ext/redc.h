@@ -118,18 +118,15 @@ public:
   py_list get_cookies(bool netscape = false);
   void clear_cookies();
 
-  py_object request(
-      const char *method, const char *url, const py_object &params = nb::none(),
-      const py_object &raw_data = nb::none(),
-      const py_object &data = nb::none(), const py_object &files = nb::none(),
-      const py_object &headers = nb::none(),
-      const py_object &cookies = nb::none(), const long &timeout_ms = 60 * 1000,
-      const long &connect_timeout_ms = 0, const bool &allow_redirect = true,
-      const char *proxy_url = "", const py_object &auth = nb::none(),
-      const bool &verify = true, const char *cert = "",
-      const py_object &stream_callback = nb::none(),
-      const py_object &progress_callback = nb::none(),
-      const bool &verbose = false);
+  py_object request(const char *method, const char *url,
+                    const py_object &params, const py_object &raw_data,
+                    const py_object &data, const py_object &files,
+                    const py_object &headers, const py_object &cookies,
+                    const long &timeout_ms, const long &connect_timeout_ms,
+                    const bool &allow_redirect, const char *proxy_url,
+                    const py_object &auth, const bool &verify, const char *cert,
+                    const py_object &stream_callback,
+                    const py_object &progress_callback, const bool &verbose);
 
   string redc_curl_version();
 
