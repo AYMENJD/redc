@@ -9,7 +9,7 @@
 
 static CurlGlobalInit g;
 
-RedC::RedC(const long &buffer, const bool &session)
+RedC::RedC(const long &read_buffer_size, const bool &session)
     : session_enabled_(session), handle_pool_(1024), queue_(1024) {
   {
     acq_gil gil;
@@ -18,7 +18,7 @@ RedC::RedC(const long &buffer, const bool &session)
     call_soon_threadsafe_ = loop_.attr("call_soon_threadsafe");
   }
 
-  buffer_size_ = buffer;
+  buffer_size_ = read_buffer_size;
   multi_handle_ = curl_multi_init();
 
   if (!multi_handle_) {
@@ -605,7 +605,7 @@ PyType_Slot slots[] = {{Py_tp_traverse, (void *)redc_tp_traverse},
 
 NB_MODULE(redc_ext, m) {
   nb::class_<RedC>(m, "RedC", nb::type_slots(slots))
-      .def(nb::init<const long &, const bool &>(), arg("buffer_size"),
+      .def(nb::init<const long &, const bool &>(), arg("buffer_size") = 16384,
            arg("persist_cookies") = false)
       .def("is_running", &RedC::is_running)
       .def("request", &RedC::request, arg("method"), arg("url"),

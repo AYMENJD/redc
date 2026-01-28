@@ -19,7 +19,7 @@ class Client:
     def __init__(
         self,
         base_url: str = None,
-        buffer_size: int = 16384,
+        read_buffer_size: int = 16384,
         headers: dict = None,
         persist_cookies: bool = False,
         timeout: tuple = (30.0, 0.0),
@@ -41,8 +41,8 @@ class Client:
             base_url (``str``, *optional*):
                 The base URL for the client. Default is ``None``
 
-            buffer_size (``int``, *optional*):
-                The buffer size for libcurl. Must be greater than ``1024`` bytes. Default is ``16384`` (16KB)
+            read_buffer_size (``int``, *optional*):
+                The read buffer size for libcurl. Must be greater than ``1024`` bytes. Default is ``16384`` (16KB)
 
             headers (``dict``, *optional*):
                 Headers to include in every request. Default is ``None``
@@ -68,7 +68,7 @@ class Client:
         """
 
         assert isinstance(base_url, (str, type(None))), "base_url must be string"
-        assert isinstance(buffer_size, int), "buffer_size must be int"
+        assert isinstance(read_buffer_size, int), "read_buffer_size must be int"
         assert isinstance(persist_cookies, bool), "persist_cookies must be bool"
         assert isinstance(cert, (str, type(None))), "cert must be string"
         assert isinstance(timeout, tuple) and len(timeout) == 2, (
@@ -79,7 +79,9 @@ class Client:
         )
         assert isinstance(raise_for_status, bool), "raise_for_status must be bool"
 
-        assert buffer_size >= 1024, "buffer_size must be bigger than 1024 bytes"
+        assert read_buffer_size >= 1024, (
+            "read_buffer_size must be bigger than 1024 bytes"
+        )
 
         self.force_verbose = force_verbose
         self.raise_for_status = raise_for_status
@@ -92,7 +94,7 @@ class Client:
         self.__cert = cert if isinstance(cert, str) else trustifi.where()
         self.__json_encoder = json_encoder
         self.__loop = asyncio.get_event_loop()
-        self.__redc_ext = RedC(buffer_size, persist_cookies)
+        self.__redc_ext = RedC(read_buffer_size, persist_cookies)
 
         self.__set_default_headers()
 

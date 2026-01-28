@@ -111,13 +111,13 @@ struct Result {
 
 class RedC {
 public:
-  RedC(const long &buffer = 16384, const bool &session = false);
+  RedC(const long &read_buffer_size, const bool &session);
   ~RedC();
 
   bool is_running();
   void close();
 
-  py_list get_cookies(bool netscape = false);
+  py_list get_cookies(bool netscape);
   void clear_cookies();
 
   py_object request(const char *method, const char *url,
