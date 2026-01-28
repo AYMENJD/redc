@@ -47,7 +47,6 @@ nanobind_add_module(
   redc_ext
   STABLE_ABI
   FREE_THREADED
-  NOMINSIZE
   LTO
   redc/ext/redc.cpp
   redc/ext/request_builder.cpp
