@@ -9,6 +9,27 @@
 
 static CurlGlobalInit g;
 
+static long get_http_version_bit(const char *version) {
+  if (version == nullptr || version[0] == '\0') {
+    return CURL_HTTP_VERSION_NONE;
+  }
+
+  switch (version[0]) {
+  case '3':
+    return CURL_HTTP_VERSION_3;
+  case '2':
+    return CURL_HTTP_VERSION_2_0;
+  case '1':
+    if (version[1] == '.' && version[2] == '1') {
+      return CURL_HTTP_VERSION_1_1;
+    }
+
+    return CURL_HTTP_VERSION_1_0;
+  default:
+    return CURL_HTTP_VERSION_NONE;
+  }
+}
+
 RedC::RedC(const long &read_buffer_size, const bool &session)
     : session_enabled_(session), handle_pool_(1024), queue_(1024) {
   {
@@ -201,7 +222,8 @@ py_object RedC::request(const char *method, const char *url,
                         const py_object &params, const py_object &raw_data,
                         const py_object &data, const py_object &files,
                         const py_object &headers, const py_object &cookies,
-                        const long &timeout_ms, const long &connect_timeout_ms,
+                        const char *http_version, const long &timeout_ms,
+                        const long &connect_timeout_ms,
                         const bool &allow_redirect, const char *proxy_url,
                         const py_object &auth, const bool &verify,
                         const char *cert, const py_object &stream_callback,
@@ -225,7 +247,8 @@ py_object RedC::request(const char *method, const char *url,
 
     curl_easy_setopt(easy, CURLOPT_URL, url);
     curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method);
-    curl_easy_setopt(easy, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_3);
+    curl_easy_setopt(easy, CURLOPT_HTTP_VERSION,
+                     get_http_version_bit(http_version));
 
     curl_easy_setopt(easy, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(easy, CURLOPT_TCP_KEEPINTVL, 30L);
@@ -612,9 +635,10 @@ NB_MODULE(redc_ext, m) {
            arg("params") = nb::none(), arg("raw_data") = nb::none(),
            arg("data") = nb::none(), arg("files") = nb::none(),
            arg("headers") = nb::none(), arg("cookies") = nb::none(),
-           arg("timeout_ms") = 60 * 1000, arg("connect_timeout_ms") = 0,
-           arg("allow_redirect") = true, arg("proxy_url") = "",
-           arg("auth") = nb::none(), arg("verify") = true, arg("cert") = "",
+           arg("http_version") = "3", arg("timeout_ms") = 60 * 1000,
+           arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,
+           arg("proxy_url") = "", arg("auth") = nb::none(),
+           arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false)
       .def("get_cookies", &RedC::get_cookies, arg("netscape") = false)

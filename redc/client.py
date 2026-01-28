@@ -1,6 +1,6 @@
 import asyncio
 from functools import lru_cache
-from typing import BinaryIO, Union
+from typing import BinaryIO, Union, Literal
 
 import trustifi
 
@@ -21,6 +21,7 @@ class Client:
         read_buffer_size: int = 16384,
         headers: dict = None,
         persist_cookies: bool = False,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = "3",
         timeout: tuple = (30.0, 0.0),
         cert: str = None,
         force_verbose: bool = None,
@@ -49,6 +50,9 @@ class Client:
             persist_cookies (``bool``, *optional*):
                 Whether to persist cookies across requests. Default is ``False``
 
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
             timeout (``tuple``, *optional*):
                 A tuple of `(total_timeout, connect_timeout)` in seconds to include in every request. Default is ``(30.0, 0.0)``
 
@@ -66,9 +70,15 @@ class Client:
                 A callable for encoding JSON data. Default is :class:`redc.utils.json_dumps`
         """
 
+        self.allowed_http_versions = ("auto", "1", "1.1", "2", "3")
+
         assert isinstance(base_url, (str, type(None))), "base_url must be string"
         assert isinstance(read_buffer_size, int), "read_buffer_size must be int"
         assert isinstance(persist_cookies, bool), "persist_cookies must be bool"
+        assert isinstance(http_version, str), "http_version must be string"
+        assert http_version in self.allowed_http_versions, (
+            "http_version must be one of 'auto', '1', '1.1', '2', '3'"
+        )
         assert isinstance(cert, (str, type(None))), "cert must be string"
         assert isinstance(timeout, tuple) and len(timeout) == 2, (
             "timeout must be a tuple of (total_timeout, connect_timeout)"
@@ -89,6 +99,8 @@ class Client:
             parse_base_url(base_url) if isinstance(base_url, str) else None
         )
         self.__default_headers = Headers(headers if isinstance(headers, dict) else {})
+        self.__default_http_version = http_version
+        self.__allowed_http_versions_set = set(self.allowed_http_versions)
         self.__timeout = timeout
         self.__cert = cert if isinstance(cert, str) else trustifi.where()
         self.__json_encoder = json_encoder
@@ -152,6 +164,7 @@ class Client:
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
@@ -207,6 +220,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
@@ -252,6 +268,11 @@ class Client:
 
             progress_callback = progress_callback.callback
 
+        if http_version is not None:
+            assert http_version in self.__allowed_http_versions_set, (
+                "http_version must be one of 'auto', '1', '1.1', '2', '3'"
+            )
+
         if json is not None:
             json = self.__json_encoder(json, encode=True)
             if headers is None:
@@ -293,6 +314,7 @@ class Client:
                     data=data,
                     files=files,
                     headers=headers,
+                    http_version=http_version or self.__default_http_version,
                     timeout_ms=int(timeout * 1000),
                     connect_timeout_ms=int(connect_timeout * 1000),
                     allow_redirect=allow_redirect,
@@ -313,6 +335,7 @@ class Client:
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
@@ -340,6 +363,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
@@ -379,6 +405,7 @@ class Client:
             url=url,
             params=params,
             headers=headers,
+            http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
@@ -395,6 +422,7 @@ class Client:
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
@@ -420,6 +448,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
@@ -453,6 +484,7 @@ class Client:
             url=url,
             params=params,
             headers=headers,
+            http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
@@ -470,6 +502,7 @@ class Client:
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
@@ -526,6 +559,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
@@ -567,6 +603,7 @@ class Client:
             data=data,
             files=files,
             headers=headers,
+            http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
@@ -586,6 +623,7 @@ class Client:
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
@@ -642,6 +680,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
@@ -683,6 +724,7 @@ class Client:
             data=data,
             files=files,
             headers=headers,
+            http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
@@ -702,6 +744,7 @@ class Client:
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
@@ -758,6 +801,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
@@ -799,6 +845,7 @@ class Client:
             data=data,
             files=files,
             headers=headers,
+            http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
@@ -815,6 +862,7 @@ class Client:
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
@@ -842,6 +890,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
@@ -881,6 +932,7 @@ class Client:
             url=url,
             params=params,
             headers=headers,
+            http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,
@@ -897,6 +949,7 @@ class Client:
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
         proxy_url: str = "",
@@ -922,6 +975,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+                Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
@@ -955,6 +1011,7 @@ class Client:
             url=url,
             params=params,
             headers=headers,
+            http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
             proxy_url=proxy_url,

@@ -124,9 +124,10 @@ public:
                     const py_object &params, const py_object &raw_data,
                     const py_object &data, const py_object &files,
                     const py_object &headers, const py_object &cookies,
-                    const long &timeout_ms, const long &connect_timeout_ms,
-                    const bool &allow_redirect, const char *proxy_url,
-                    const py_object &auth, const bool &verify, const char *cert,
+                    const char *http_version, const long &timeout_ms,
+                    const long &connect_timeout_ms, const bool &allow_redirect,
+                    const char *proxy_url, const py_object &auth,
+                    const bool &verify, const char *cert,
                     const py_object &stream_callback,
                     const py_object &progress_callback, const bool &verbose);
 
