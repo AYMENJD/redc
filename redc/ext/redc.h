@@ -35,10 +35,12 @@ using py_dict = nb::dict;
 using arg = nb::arg;
 using string = std::string;
 
-size_t MAX_RESPONSE_SIZE =
+constexpr size_t MAX_RESPONSE_SIZE =
     16 * 1024 * 1024; // 16MB, max response size for non streamed responses
 
-inline bool isNullOrEmpty(const char *str) { return !str || !*str; }
+constexpr bool isNullOrEmpty(const char *str) { return !str || !*str; }
+
+class RequestBuilder;
 
 struct Request {
   Request() {
@@ -173,6 +175,8 @@ private:
   static void share_unlock_cb(CURL *handle, curl_lock_data data, RedC *self);
 
   py_dict parse_cookie_string(const char *cookie_line);
+
+  friend class RequestBuilder;
 
   friend int redc_tp_traverse(PyObject *, visitproc, void *);
   friend int redc_tp_clear(PyObject *);
