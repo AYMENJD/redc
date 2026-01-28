@@ -1,7 +1,6 @@
 import asyncio
 from functools import lru_cache
 from typing import BinaryIO, Union
-from urllib.parse import urlencode
 
 import trustifi
 
@@ -149,7 +148,6 @@ class Client:
         method: str,
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        form: dict = None,
         json=None,
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
@@ -181,9 +179,6 @@ class Client:
 
             params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
                 Query parameters to include in the request. Default is ``None``
-
-            form (``dict``, *optional*):
-                Form data to send in the request body. Default is ``None``
 
             json (``dict``, *optional*):
                 JSON data to send in the request body. Default is ``None``
@@ -257,9 +252,6 @@ class Client:
 
             progress_callback = progress_callback.callback
 
-        if form is not None:
-            form = urlencode(form).encode("utf-8")
-
         if json is not None:
             json = self.__json_encoder(json, encode=True)
             if headers is None:
@@ -297,7 +289,7 @@ class Client:
                     method=method,
                     url=url,
                     params=params,
-                    raw_data=form or json,
+                    raw_data=json,
                     data=data,
                     files=files,
                     headers=headers,
@@ -474,7 +466,6 @@ class Client:
         self,
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        form: dict = None,
         json=None,
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
@@ -507,9 +498,6 @@ class Client:
 
             params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
                 Query parameters to include in the request. Default is ``None``
-
-            form (``dict``, *optional*):
-                Form data to send in the request body. Default is ``None``
 
             json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
@@ -575,7 +563,6 @@ class Client:
             method="POST",
             url=url,
             params=params,
-            form=form,
             json=json,
             data=data,
             files=files,
@@ -595,7 +582,6 @@ class Client:
         self,
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        form: dict = None,
         json=None,
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
@@ -628,9 +614,6 @@ class Client:
 
             params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
                 Query parameters to include in the request. Default is ``None``
-
-            form (``dict``, *optional*):
-                Form data to send in the request body. Default is ``None``
 
             json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
@@ -696,7 +679,6 @@ class Client:
             method="PUT",
             url=url,
             params=params,
-            form=form,
             json=json,
             data=data,
             files=files,
@@ -716,7 +698,6 @@ class Client:
         self,
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        form: dict = None,
         json=None,
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
@@ -749,9 +730,6 @@ class Client:
 
             params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
                 Query parameters to include in the request. Default is ``None``
-
-            form (``dict``, *optional*):
-                Form data to send in the request body. Default is ``None``
 
             json (``Any``, *optional*):
                 JSON data to send in the request body. Default is ``None``
@@ -817,7 +795,6 @@ class Client:
             method="PATCH",
             url=url,
             params=params,
-            form=form,
             json=json,
             data=data,
             files=files,
