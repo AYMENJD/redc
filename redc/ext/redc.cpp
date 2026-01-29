@@ -346,6 +346,38 @@ py_object RedC::request(const char *method, const char *url,
   }
 }
 
+static py_tuple make_error_tuple(int code, const char *msg) {
+  return nb::make_tuple(-1, nb::none(), nb::none(), code, msg);
+}
+
+static py_tuple make_result_tuple(const Result &req) {
+  /*
+   * Result is allways Tuple:
+   *
+   * 0: HTTP response status code.
+   *    If the value is -1, it indicates a cURL error occurred
+   *
+   * 1: Response headers as bytes; can be null
+   *
+   * 2: The actual response data as bytes; can be null
+   *
+   * 3: cURL return code. This indicates the result code of the cURL
+   * operation. See: https://curl.se/libcurl/c/libcurl-errors.html
+   *
+   * 4: cURL error message string; can be null
+   */
+
+  if (req.res == CURLE_OK) {
+    return nb::make_tuple(
+        req.response_code,
+        py_bytes(req.request->headers.data(), req.request->headers.size()),
+        py_bytes(req.request->response.data(), req.request->response.size()),
+        (int)req.res, nb::none());
+  }
+
+  return make_error_tuple((int)req.res, curl_easy_strerror(req.res));
+}
+
 void RedC::worker_loop() {
   std::unordered_map<CURL *, std::unique_ptr<Request>> active;
 
@@ -365,8 +397,7 @@ void RedC::worker_loop() {
         call_soon_threadsafe_(
             nb::cpp_function([request = std::move(pending.request), mres]() {
               request->future.attr("set_result")(
-                  nb::make_tuple(-1, nb::none(), nb::none(), (int)mres,
-                                 curl_multi_strerror(mres)));
+                  make_error_tuple((int)mres, curl_multi_strerror(mres)));
             }));
 
         release_handle(easy);
@@ -433,40 +464,8 @@ void RedC::worker_loop() {
           nb::cpp_function([batch = std::make_unique<std::vector<Result>>(
                                 std::move(result_batch))]() {
             for (auto &req : *batch) {
-              auto &request = req.request;
-              auto res = req.res;
-              auto response_code = req.response_code;
-
-              /*
-               * Result is allways Tuple:
-               *
-               * 0: HTTP response status code.
-               *    If the value is -1, it indicates a cURL error occurred
-               *
-               * 1: Response headers as bytes; can be null
-               *
-               * 2: The actual response data as bytes; can be null
-               *
-               * 3: cURL return code. This indicates the result code of the cURL
-               * operation. See: https://curl.se/libcurl/c/libcurl-errors.html
-               *
-               * 4: cURL error message string; can be null
-               */
-              py_object result;
-
-              if (res == CURLE_OK) {
-                result = nb::make_tuple(
-                    response_code,
-                    py_bytes(request->headers.data(), request->headers.size()),
-                    py_bytes(request->response.data(),
-                             request->response.size()),
-                    (int)res, nb::none());
-              } else {
-                result = nb::make_tuple(-1, nb::none(), nb::none(), (int)res,
-                                        curl_easy_strerror(res));
-              }
-
-              request->future.attr("set_result")(std::move(result));
+              auto result = make_result_tuple(req);
+              req.request->future.attr("set_result")(std::move(result));
             }
           }));
     }
