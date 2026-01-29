@@ -30,6 +30,21 @@ static long get_http_version_bit(const char *version) {
   }
 }
 
+static const char *get_http_version_from_bit(long version) {
+  switch (version) {
+  case CURL_HTTP_VERSION_1_0:
+    return "1";
+  case CURL_HTTP_VERSION_1_1:
+    return "1.1";
+  case CURL_HTTP_VERSION_2_0:
+    return "2";
+  case CURL_HTTP_VERSION_3:
+    return "3";
+  default:
+    return nullptr;
+  }
+}
+
 RedC::RedC(const long &read_buffer_size, const bool &session)
     : session_enabled_(session), handle_pool_(1024), queue_(1024) {
   {
@@ -347,7 +362,15 @@ py_object RedC::request(const char *method, const char *url,
 }
 
 static py_tuple make_error_tuple(int code, const char *msg) {
-  return nb::make_tuple(-1, nb::none(), nb::none(), "", 0.0, code, msg);
+  return nb::make_tuple(-1,         /*response_code*/
+                        nb::none(), /*headers*/
+                        nb::none(), /*response*/
+                        "",         /*url*/
+                        "",         /*http_version*/
+                        0.0,        /*elapsed*/
+                        code,       /*curl_code*/
+                        msg         /*curl error msg*/
+  );
 }
 
 static py_tuple make_result_tuple(const Result &result) {
@@ -365,6 +388,8 @@ static py_tuple make_result_tuple(const Result &result) {
                  result.request->response.size()),
         // Final effective URL used for the request
         result.url,
+        // The HTTP version of the transfer
+        get_http_version_from_bit(result.http_version),
         // Total time for the transfer
         result.elapsed,
         // cURL return code. This indicates the result code of the cURL
@@ -439,13 +464,15 @@ void RedC::worker_loop() {
     result_batch.reserve(done_handles.size());
 
     for (auto &[easy, curl_code] : done_handles) {
-      long response_code = 0;
+      long response_code;
       char *url;
+      long http_version;
       curl_off_t elapsed;
 
       if (curl_code == CURLE_OK) {
         curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &url);
+        curl_easy_getinfo(easy, CURLINFO_HTTP_VERSION, &http_version);
         curl_easy_getinfo(easy, CURLINFO_TOTAL_TIME_T, &elapsed);
       }
 
@@ -456,8 +483,8 @@ void RedC::worker_loop() {
         auto req = std::move(it->second);
         active.erase(it);
 
-        result_batch.push_back(
-            Result{std::move(req), curl_code, response_code, url, elapsed});
+        result_batch.push_back(Result{std::move(req), curl_code, response_code,
+                                      url, http_version, elapsed});
       }
 
       release_handle(easy);

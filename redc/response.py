@@ -9,6 +9,7 @@ class Response:
         headers: bytes,
         response: bytes,
         url: str,
+        http_version: str,
         elapsed: float,
         curl_code: int,
         curl_error_message: str,
@@ -32,6 +33,10 @@ class Response:
 
         self.url = url
         """Final effective URL used for the request"""
+
+        self.http_version = http_version
+        """Used HTTP version"""
+
         self.elapsed_microseconds = elapsed
         """Elapsed time in microseconds"""
         self.elapsed = elapsed / 1_000_000
