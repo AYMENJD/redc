@@ -105,8 +105,10 @@ struct PendingRequest {
 
 struct Result {
   std::unique_ptr<Request> request;
-  CURLcode res;
+  CURLcode curl_code;
+
   long response_code;
+  char *url;
 };
 
 class RedC {

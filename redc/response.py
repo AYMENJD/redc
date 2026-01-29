@@ -8,6 +8,7 @@ class Response:
         status_code: int,
         headers: bytes,
         response: bytes,
+        url: str,
         curl_code: int,
         curl_error_message: str,
         raise_for_status: bool = False,
@@ -21,6 +22,9 @@ class Response:
         """HTTP response headers"""
 
         self.__response = response
+
+        self.url = url
+        """Final effective URL used for the request"""
 
         self.curl_code = curl_code
         """CURL return code"""
