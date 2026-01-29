@@ -347,7 +347,7 @@ py_object RedC::request(const char *method, const char *url,
 }
 
 static py_tuple make_error_tuple(int code, const char *msg) {
-  return nb::make_tuple(-1, nb::none(), nb::none(), "", code, msg);
+  return nb::make_tuple(-1, nb::none(), nb::none(), "", 0.0, code, msg);
 }
 
 static py_tuple make_result_tuple(const Result &result) {
@@ -365,6 +365,8 @@ static py_tuple make_result_tuple(const Result &result) {
                  result.request->response.size()),
         // Final effective URL used for the request
         result.url,
+        // Total time for the transfer
+        result.elapsed,
         // cURL return code. This indicates the result code of the cURL
         // operation. See: https://curl.se/libcurl/c/libcurl-errors.html
         (int)result.curl_code,
@@ -439,10 +441,12 @@ void RedC::worker_loop() {
     for (auto &[easy, curl_code] : done_handles) {
       long response_code = 0;
       char *url;
+      curl_off_t elapsed;
 
       if (curl_code == CURLE_OK) {
         curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &url);
+        curl_easy_getinfo(easy, CURLINFO_TOTAL_TIME_T, &elapsed);
       }
 
       curl_multi_remove_handle(multi_handle_, easy);
@@ -453,7 +457,7 @@ void RedC::worker_loop() {
         active.erase(it);
 
         result_batch.push_back(
-            Result{std::move(req), curl_code, response_code, url});
+            Result{std::move(req), curl_code, response_code, url, elapsed});
       }
 
       release_handle(easy);

@@ -109,6 +109,7 @@ struct Result {
 
   long response_code;
   char *url;
+  curl_off_t elapsed;
 };
 
 class RedC {
