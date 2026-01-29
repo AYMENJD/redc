@@ -98,9 +98,15 @@ class Client:
         self.__base_url = (
             parse_base_url(base_url) if isinstance(base_url, str) else None
         )
+
         self.__default_headers = Headers(headers if isinstance(headers, dict) else {})
+        self.__default_headers_lc = {
+            k.lower(): v for k, v in self.__default_headers.items()
+        }
+
         self.__default_http_version = http_version
         self.__allowed_http_versions_set = set(self.allowed_http_versions)
+        self.__empty_set = {"", None}
         self.__timeout = timeout
         self.__cert = cert if isinstance(cert, str) else trustifi.where()
         self.__json_encoder = json_encoder
@@ -293,17 +299,7 @@ class Client:
         elif connect_timeout > timeout:
             raise ValueError("connect_timeout must be less than `timeout` argument")
 
-        if headers is not None:
-            if isinstance(headers, dict):
-                headers = {
-                    **self.__default_headers,
-                    **{k.lower(): v for k, v in headers.items()},
-                }
-                headers = [f"{k}: {v}" for k, v in headers.items()]
-            else:
-                raise TypeError("headers must be of type dict[str, str]")
-        else:
-            headers = [f"{k}: {v}" for k, v in self.__default_headers.items()]
+        headers = self.__build_headers(headers)
 
         if self.__base_url:
             url = f"{self.__base_url}{url.lstrip('/')}"
@@ -1070,6 +1066,19 @@ class Client:
         """
 
         return await self.__loop.run_in_executor(None, self.__redc_ext.close)
+
+    def __build_headers(self, headers):
+        h = dict(self.__default_headers_lc)
+        empty = self.__empty_set
+
+        if headers is not None:
+            if not isinstance(headers, dict):
+                raise TypeError("headers must be of type dict[str, str]")
+
+            for k, v in headers.items():
+                h[k.lower()] = v
+
+        return [f"{k};" if v in empty else f"{k}: {v}" for k, v in h.items()]
 
     def __set_default_headers(self):
         if "user-agent" not in self.__default_headers:
