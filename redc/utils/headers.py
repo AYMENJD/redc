@@ -50,11 +50,66 @@ class Headers(dict):
             self[key] = value
 
     @staticmethod
-    def parse_headers(headers_str: bytes):
-        lines = headers_str.decode().splitlines()
-        headers = Headers()
-        for line in lines[1:]:
-            if ":" in line:
-                key, value = line.split(":", 1)
-                headers[key] = value.strip()
-        return headers
+    def parse_history(raw_headers: bytes) -> list["History"]:
+        text = raw_headers.decode("iso-8859-1")
+        blocks = text.split("\r\n\r\n")
+
+        history = []
+
+        for block in blocks:
+            if not block.strip():
+                continue
+
+            lines = block.splitlines()
+            if not lines:
+                continue
+
+            status_line = lines[0]
+            parts = status_line.split(" ", 2)
+            if len(parts) < 2:
+                continue
+
+            http_version = parts[0].replace("HTTP/", "")
+            try:
+                status_code = int(parts[1])
+            except ValueError:
+                continue
+
+            headers = Headers()
+            for line in lines[1:]:
+                if ":" in line:
+                    k, v = line.split(":", 1)
+                    headers[k] = v.strip()
+
+            history.append(
+                History(
+                    url=headers.get("location"),
+                    http_version=http_version,
+                    headers=headers,
+                    status_code=status_code,
+                )
+            )
+
+        return history
+
+
+class History:
+    __slots__ = ("url", "http_version", "headers", "status_code")
+
+    def __init__(
+        self,
+        *,
+        url: str,
+        http_version: str,
+        headers: Headers,
+        status_code: int,
+    ):
+        self.url = url
+        self.http_version = http_version
+        self.headers = headers
+        self.status_code = status_code
+
+    def __repr__(self):
+        return (
+            f"<History [{self.status_code}] HTTP/{self.http_version} url={self.url!r}>"
+        )

@@ -19,8 +19,14 @@ class Response:
         self.status_code = status_code
         """HTTP response status code; If the value is ``-1``, it indicates a cURL error occurred"""
 
-        self.headers = None if status_code == -1 else Headers.parse_headers(headers)
+        self.headers = None
         """HTTP response headers"""
+        self.history = None
+        """History of requests that led to this response"""
+
+        if headers:
+            self.history = Headers.parse_history(headers)
+            self.headers = self.history.pop(-1).headers
 
         self.__response = response
 
