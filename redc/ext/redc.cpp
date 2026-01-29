@@ -243,6 +243,7 @@ py_object RedC::request(const char *method, const char *url,
   try {
     if (session_enabled_ && share_handle_) {
       curl_easy_setopt(easy, CURLOPT_SHARE, share_handle_);
+      curl_easy_setopt(easy, CURLOPT_COOKIEFILE, "");
     }
 
     curl_easy_setopt(easy, CURLOPT_URL, url);
@@ -257,7 +258,6 @@ py_object RedC::request(const char *method, const char *url,
     curl_easy_setopt(easy, CURLOPT_ACCEPT_ENCODING, "");
     curl_easy_setopt(easy, CURLOPT_BUFFERSIZE, buffer_size_);
 
-    curl_easy_setopt(easy, CURLOPT_COOKIEFILE, "");
     curl_easy_setopt(easy, CURLOPT_SSL_OPTIONS, CURLSSLOPT_NATIVE_CA);
 
     curl_easy_setopt(easy, CURLOPT_TIMEOUT_MS, timeout_ms);

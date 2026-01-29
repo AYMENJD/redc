@@ -16,7 +16,7 @@ void RequestBuilder::set_cookies(CURL *easy, const py_object &cookies) {
   if (nb::isinstance<py_dict>(cookies)) {
     cookie_dict = nb::borrow<py_dict>(cookies);
   } else {
-    cookie_dict = nb::cast<py_dict>(cookies);
+    throw std::invalid_argument("cookies must be a dict");
   }
 
   for (auto item : cookie_dict) {
@@ -43,6 +43,7 @@ void RequestBuilder::set_auth(CURL *easy, const py_object &auth) {
   if (auth.is_none()) {
     return;
   }
+
   if (nb::isinstance<py_str>(auth)) {
     string token = nb::cast<string>(auth);
     curl_easy_setopt(easy, CURLOPT_HTTPAUTH, CURLAUTH_BEARER);

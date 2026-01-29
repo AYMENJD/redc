@@ -164,6 +164,7 @@ class Client:
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
+        cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -219,6 +220,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            cookies (``dict[str, str]``, *optional*):
+                Cookies to include in the request. Default is ``None``
 
             http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
@@ -314,6 +318,7 @@ class Client:
                     data=data,
                     files=files,
                     headers=headers,
+                    cookies=cookies,
                     http_version=http_version or self.__default_http_version,
                     timeout_ms=int(timeout * 1000),
                     connect_timeout_ms=int(connect_timeout * 1000),
@@ -335,6 +340,7 @@ class Client:
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
+        cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -363,6 +369,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            cookies (``dict[str, str]``, *optional*):
+                Cookies to include in the request. Default is ``None``
 
             http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
@@ -405,6 +414,7 @@ class Client:
             url=url,
             params=params,
             headers=headers,
+            cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -422,6 +432,7 @@ class Client:
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
+        cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -448,6 +459,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            cookies (``dict[str, str]``, *optional*):
+                Cookies to include in the request. Default is ``None``
 
             http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
@@ -484,6 +498,7 @@ class Client:
             url=url,
             params=params,
             headers=headers,
+            cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -502,6 +517,7 @@ class Client:
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
+        cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -559,6 +575,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
+            cookies (``dict[str, str]``, *optional*):
+                Cookies to include in the request. Default is ``None``
+
             http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
@@ -603,6 +622,7 @@ class Client:
             data=data,
             files=files,
             headers=headers,
+            cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -623,6 +643,7 @@ class Client:
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
+        cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -680,6 +701,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
+            cookies (``dict[str, str]``, *optional*):
+                Cookies to include in the request. Default is ``None``
+
             http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
@@ -724,6 +748,7 @@ class Client:
             data=data,
             files=files,
             headers=headers,
+            cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -744,6 +769,7 @@ class Client:
         data: Union[dict[str, str], BinaryIO] = None,
         files: dict[str, str] = None,
         headers: dict[str, str] = None,
+        cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -801,6 +827,9 @@ class Client:
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
 
+            cookies (``dict[str, str]``, *optional*):
+                Cookies to include in the request. Default is ``None``
+
             http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
@@ -845,6 +874,7 @@ class Client:
             data=data,
             files=files,
             headers=headers,
+            cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -862,6 +892,7 @@ class Client:
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
+        cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -890,6 +921,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            cookies (``dict[str, str]``, *optional*):
+                Cookies to include in the request. Default is ``None``
 
             http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
@@ -932,6 +966,7 @@ class Client:
             url=url,
             params=params,
             headers=headers,
+            cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
@@ -949,6 +984,7 @@ class Client:
         url: str,
         params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
         headers: dict[str, str] = None,
+        cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
         allow_redirect: bool = True,
@@ -975,6 +1011,9 @@ class Client:
 
             headers (``dict[str, str]``, *optional*):
                 Headers to include in the request. Default is ``None``
+
+            cookies (``dict[str, str]``, *optional*):
+                Cookies to include in the request. Default is ``None``
 
             http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
@@ -1011,6 +1050,7 @@ class Client:
             url=url,
             params=params,
             headers=headers,
+            cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
             allow_redirect=allow_redirect,
