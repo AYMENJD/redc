@@ -55,6 +55,27 @@ class Response:
         """Checks if the request is successful and with no errors"""
         return bool(self)
 
+    @property
+    def is_redirect(self) -> bool:
+        """True if this response is a redirect"""
+
+        if self.status_code == -1 or not self.headers:
+            return False
+
+        return (
+            self.status_code in (300, 301, 302, 303, 307, 308)
+            and "location" in self.headers
+        )
+
+    @property
+    def is_permanent_redirect(self) -> bool:
+        """True if this response is a permanent redirect"""
+
+        if self.status_code == -1:
+            return False
+
+        return self.status_code in (301, 308)
+
     def text(self, encoding: str = "utf-8"):
         """Decodes the response content into a string
 
