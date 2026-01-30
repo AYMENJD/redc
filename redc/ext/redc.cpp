@@ -362,15 +362,7 @@ py_object RedC::request(const char *method, const char *url,
 }
 
 static py_tuple make_error_tuple(int code, const char *msg) {
-  return nb::make_tuple(-1,         /*response_code*/
-                        nb::none(), /*headers*/
-                        nb::none(), /*response*/
-                        "",         /*url*/
-                        "",         /*http_version*/
-                        0.0,        /*elapsed*/
-                        code,       /*curl_code*/
-                        msg         /*curl error msg*/
-  );
+  return nb::make_tuple(code, msg);
 }
 
 static py_tuple make_result_tuple(const Result &result) {
@@ -394,9 +386,7 @@ static py_tuple make_result_tuple(const Result &result) {
         result.elapsed,
         // cURL return code. This indicates the result code of the cURL
         // operation. See: https://curl.se/libcurl/c/libcurl-errors.html
-        (int)result.curl_code,
-        // cURL error message string; can be null
-        nb::none());
+        (int)result.curl_code);
   }
 
   return make_error_tuple((int)result.curl_code,

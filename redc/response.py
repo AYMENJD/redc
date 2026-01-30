@@ -133,3 +133,21 @@ class Response:
 
     def __bool__(self):
         return self.status_code != -1 and 200 <= self.status_code <= 299
+
+    @classmethod
+    def from_result(cls, result, *, raise_for_status=False):
+        if len(result) == 2:
+            curl_code, message = result
+            return cls(
+                status_code=-1,
+                headers=None,
+                response=None,
+                url=None,
+                http_version=None,
+                elapsed=0.0,
+                curl_code=curl_code,
+                curl_error_message=message,
+                raise_for_status=raise_for_status,
+            )
+
+        return cls(*result, curl_error_message=None, raise_for_status=raise_for_status)

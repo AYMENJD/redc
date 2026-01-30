@@ -1,6 +1,6 @@
 import asyncio
 from functools import lru_cache
-from typing import BinaryIO, Union, Literal
+from typing import BinaryIO, Literal, Union
 
 import trustifi
 
@@ -304,29 +304,27 @@ class Client:
         if self.__base_url:
             url = f"{self.__base_url}{url.lstrip('/')}"
 
-        return Response(
-            *(
-                await self.__redc_ext.request(
-                    method=method,
-                    url=url,
-                    params=params,
-                    raw_data=json,
-                    data=data,
-                    files=files,
-                    headers=headers,
-                    cookies=cookies,
-                    http_version=http_version or self.__default_http_version,
-                    timeout_ms=int(timeout * 1000),
-                    connect_timeout_ms=int(connect_timeout * 1000),
-                    allow_redirect=allow_redirect,
-                    proxy_url=proxy_url,
-                    auth=auth,
-                    verify=verify,
-                    cert=cert or self.__cert,
-                    stream_callback=stream_callback,
-                    progress_callback=progress_callback,
-                    verbose=self.force_verbose or verbose,
-                )
+        return Response.from_result(
+            result=await self.__redc_ext.request(
+                method=method,
+                url=url,
+                params=params,
+                raw_data=json,
+                data=data,
+                files=files,
+                headers=headers,
+                cookies=cookies,
+                http_version=http_version or self.__default_http_version,
+                timeout_ms=int(timeout * 1000),
+                connect_timeout_ms=int(connect_timeout * 1000),
+                allow_redirect=allow_redirect,
+                proxy_url=proxy_url,
+                auth=auth,
+                verify=verify,
+                cert=cert or self.__cert,
+                stream_callback=stream_callback,
+                progress_callback=progress_callback,
+                verbose=self.force_verbose or verbose,
             ),
             raise_for_status=self.raise_for_status,
         )
