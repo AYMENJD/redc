@@ -322,6 +322,8 @@ py_object RedC::request(const char *method, const char *url,
     req->has_stream_callback = !stream_callback.is_none() && !is_nobody;
     req->has_progress_callback = !progress_callback.is_none() && !is_nobody;
 
+    curl_easy_setopt(easy, CURLOPT_ERRORBUFFER, req->errbuf);
+
     RequestBuilder::set_payload(easy, req.get(), raw_data, data, files);
 
     CurlSlist slist_headers;
@@ -390,7 +392,9 @@ static py_tuple make_result_tuple(const Result &result) {
   }
 
   return make_error_tuple((int)result.curl_code,
-                          curl_easy_strerror(result.curl_code));
+                          result.request->errbuf[0]
+                              ? result.request->errbuf
+                              : curl_easy_strerror(result.curl_code));
 }
 
 void RedC::worker_loop() {

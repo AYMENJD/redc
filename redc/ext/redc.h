@@ -56,25 +56,6 @@ struct Request {
 
   ~Request() = default;
 
-  void clear() {
-    future = {};
-    loop = {};
-    stream_callback = {};
-    progress_callback = {};
-    body_stream = {};
-    raw_data = {};
-
-    mime_streams.clear();
-    mime_data_store.clear();
-
-    headers.clear();
-    response.clear();
-
-    request_headers = {};
-    curl_mime_ = {};
-    post_data_buffer.clear();
-  }
-
   py_object future;
   py_object loop;
   py_object stream_callback{nb::none()};
@@ -96,6 +77,7 @@ struct Request {
   string post_data_buffer;
 
   std::vector<char> response;
+  char errbuf[CURL_ERROR_SIZE]{0};
 };
 
 struct PendingRequest {
