@@ -415,8 +415,11 @@ void RedC::worker_loop() {
         acq_gil gil;
         call_soon_threadsafe_(nb::cpp_function(
             [request = std::move(pending.request), mcurl_code]() {
-              request->future.attr("set_result")(make_error_tuple(
-                  (int)mcurl_code, curl_multi_strerror(mcurl_code)));
+              const char *err = curl_multi_strerror(mcurl_code);
+
+              request->future.attr("set_exception")(std::runtime_error(
+                  "CURLM " + std::to_string((int)mcurl_code) + ": " +
+                  (err ? err : "unknown error")));
             }));
 
         release_handle(easy);
