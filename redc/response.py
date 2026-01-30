@@ -1,6 +1,7 @@
 from functools import lru_cache
 from typing import Union
 
+from .codes import HTTPStatus
 from .exceptions import HTTPError
 from .utils import Headers, json_loads, parse_link_header
 
@@ -59,7 +60,7 @@ class Response:
         return self.__response
 
     @property
-    @lru_cache
+    @lru_cache(1)
     def links(self) -> Union[list[dict[str, str]], None]:
         """Returns the parsed Link HTTP header
 
@@ -72,6 +73,13 @@ class Response:
 
         if link_header := self.headers.get("link"):
             return parse_link_header(link_header)
+
+    @property
+    @lru_cache(1)
+    def reason(self) -> str:
+        """Returns the reason phrase for the HTTP status code"""
+
+        return HTTPStatus.get_description(self.status_code) or "Unknown"
 
     @property
     def ok(self):
