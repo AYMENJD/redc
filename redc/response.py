@@ -1,5 +1,8 @@
+from functools import lru_cache
+from typing import Union
+
 from .exceptions import HTTPError
-from .utils import Headers, json_loads
+from .utils import Headers, json_loads, parse_link_header
 
 
 class Response:
@@ -54,6 +57,21 @@ class Response:
     def content(self) -> bytes:
         """Returns the raw response content"""
         return self.__response
+
+    @property
+    @lru_cache
+    def links(self) -> Union[list[dict[str, str]], None]:
+        """Returns the parsed Link HTTP header
+
+        Returns a list of dictionaries, where each dictionary contains the link
+        target (``url``) and other parameters (e.g., ``rel``, ``title``)
+
+        Returns:
+            ``list[dict]`` | ``None``
+        """
+
+        if link_header := self.headers.get("link"):
+            return parse_link_header(link_header)
 
     @property
     def ok(self):

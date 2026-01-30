@@ -1,3 +1,11 @@
+import re
+
+
+LINK_SPLITTER = re.compile(r",(?=\s*<)")
+LINK_MATCHER = re.compile(r"\s*<([^>]+)>\s*(.*)")
+PARAM_MATCHER = re.compile(r';\s*([a-zA-Z0-9\-\*]+)\s*=\s*(?:"([^"]*)"|([^,;]*))')
+
+
 def check_key_dict(key: str, data: dict):
     key = key.lower()
     for k in data.keys():
@@ -5,6 +13,30 @@ def check_key_dict(key: str, data: dict):
             return True
 
     return False
+
+
+def parse_link_header(header):
+    if not header:
+        return None
+
+    links = []
+
+    for part in LINK_SPLITTER.split(header):
+        link = LINK_MATCHER.match(part)
+        if not link:
+            continue
+
+        data = {"url": link.group(1)}
+
+        for p in PARAM_MATCHER.finditer(link.group(2)):
+            key = p.group(1).lower()
+            value = p.group(2) if p.group(2) is not None else p.group(3)
+
+            data[key] = value
+
+        links.append(data)
+
+    return links
 
 
 class Headers(dict):
