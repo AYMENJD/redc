@@ -239,7 +239,7 @@ py_object RedC::request(const char *method, const char *url,
                         const py_object &headers, const py_object &cookies,
                         const char *http_version, const long &timeout_ms,
                         const long &connect_timeout_ms,
-                        const bool &allow_redirect, const char *proxy_url,
+                        const bool &allow_redirects, const char *proxy_url,
                         const py_object &auth, const bool &verify,
                         const char *cert, const py_object &stream_callback,
                         const py_object &progress_callback,
@@ -292,7 +292,7 @@ py_object RedC::request(const char *method, const char *url,
       curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, &RedC::write_callback);
     }
 
-    if (allow_redirect) {
+    if (allow_redirects) {
       curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
       curl_easy_setopt(easy, CURLOPT_MAXREDIRS, 30L);
     }
@@ -657,7 +657,7 @@ NB_MODULE(redc_ext, m) {
            arg("data") = nb::none(), arg("files") = nb::none(),
            arg("headers") = nb::none(), arg("cookies") = nb::none(),
            arg("http_version") = "3", arg("timeout_ms") = 60 * 1000,
-           arg("connect_timeout_ms") = 0, arg("allow_redirect") = true,
+           arg("connect_timeout_ms") = 0, arg("allow_redirects") = true,
            arg("proxy_url") = "", arg("auth") = nb::none(),
            arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),

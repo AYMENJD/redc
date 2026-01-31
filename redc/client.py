@@ -173,7 +173,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirect: bool = True,
+        allow_redirects: bool = True,
         proxy_url: str = "",
         auth: Union[tuple, str] = None,
         verify: bool = True,
@@ -237,7 +237,7 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirect (``bool``, *optional*):
+            allow_redirects (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
@@ -317,7 +317,7 @@ class Client:
                 http_version=http_version or self.__default_http_version,
                 timeout_ms=int(timeout * 1000),
                 connect_timeout_ms=int(connect_timeout * 1000),
-                allow_redirect=allow_redirect,
+                allow_redirects=allow_redirects,
                 proxy_url=proxy_url,
                 auth=auth,
                 verify=verify,
@@ -337,7 +337,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirect: bool = True,
+        allow_redirects: bool = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -374,7 +374,7 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirect (``bool``, *optional*):
+            allow_redirects (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
@@ -411,7 +411,7 @@ class Client:
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
-            allow_redirect=allow_redirect,
+            allow_redirects=allow_redirects,
             proxy_url=proxy_url,
             auth=auth,
             verify=verify,
@@ -429,7 +429,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirect: bool = True,
+        allow_redirects: bool = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -464,7 +464,7 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirect (``bool``, *optional*):
+            allow_redirects (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
@@ -495,7 +495,7 @@ class Client:
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
-            allow_redirect=allow_redirect,
+            allow_redirects=allow_redirects,
             proxy_url=proxy_url,
             auth=auth,
             verify=verify,
@@ -514,7 +514,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirect: bool = True,
+        allow_redirects: bool = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -579,7 +579,7 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirect (``bool``, *optional*):
+            allow_redirects (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
@@ -619,7 +619,7 @@ class Client:
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
-            allow_redirect=allow_redirect,
+            allow_redirects=allow_redirects,
             proxy_url=proxy_url,
             auth=auth,
             verify=verify,
@@ -640,7 +640,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirect: bool = True,
+        allow_redirects: bool = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -705,7 +705,7 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirect (``bool``, *optional*):
+            allow_redirects (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
@@ -745,7 +745,7 @@ class Client:
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
-            allow_redirect=allow_redirect,
+            allow_redirects=allow_redirects,
             proxy_url=proxy_url,
             auth=auth,
             verify=verify,
@@ -766,7 +766,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirect: bool = True,
+        allow_redirects: bool = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -831,7 +831,7 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirect (``bool``, *optional*):
+            allow_redirects (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
@@ -871,7 +871,7 @@ class Client:
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
-            allow_redirect=allow_redirect,
+            allow_redirects=allow_redirects,
             proxy_url=proxy_url,
             auth=auth,
             verify=verify,
@@ -889,7 +889,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirect: bool = True,
+        allow_redirects: bool = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -926,7 +926,7 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirect (``bool``, *optional*):
+            allow_redirects (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
@@ -963,7 +963,7 @@ class Client:
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
-            allow_redirect=allow_redirect,
+            allow_redirects=allow_redirects,
             proxy_url=proxy_url,
             auth=auth,
             verify=verify,
@@ -981,7 +981,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirect: bool = True,
+        allow_redirects: bool = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -1016,7 +1016,7 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirect (``bool``, *optional*):
+            allow_redirects (``bool``, *optional*):
                 Whether to allow redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
@@ -1047,7 +1047,7 @@ class Client:
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
             timeout=timeout,
-            allow_redirect=allow_redirect,
+            allow_redirects=allow_redirects,
             proxy_url=proxy_url,
             auth=auth,
             verify=verify,

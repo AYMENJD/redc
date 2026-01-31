@@ -111,7 +111,7 @@ public:
                     const py_object &data, const py_object &files,
                     const py_object &headers, const py_object &cookies,
                     const char *http_version, const long &timeout_ms,
-                    const long &connect_timeout_ms, const bool &allow_redirect,
+                    const long &connect_timeout_ms, const bool &allow_redirects,
                     const char *proxy_url, const py_object &auth,
                     const bool &verify, const char *cert,
                     const py_object &stream_callback,
