@@ -14,6 +14,7 @@ class Response:
         response: bytes,
         url: str,
         http_version: str,
+        connect_time: float,
         elapsed: float,
         curl_code: int,
         curl_error_message: str,
@@ -41,10 +42,10 @@ class Response:
         self.http_version = http_version
         """Used HTTP version"""
 
+        self.connect_time_microseconds = connect_time
+        """Connect time in microseconds"""
         self.elapsed_microseconds = elapsed
         """Elapsed time in microseconds"""
-        self.elapsed = elapsed / 1_000_000
-        """Elapsed time in seconds"""
 
         self.curl_code = curl_code
         """CURL return code"""
@@ -53,6 +54,18 @@ class Response:
 
         if raise_for_status:
             self.raise_for_status()
+
+    @property
+    def connect_time(self) -> float:
+        """Connect time in seconds"""
+
+        return self.connect_time_microseconds / 1_000_000
+
+    @property
+    def elapsed(self) -> float:
+        """Elapsed time in seconds"""
+
+        return self.elapsed_microseconds / 1_000_000
 
     @property
     def content(self) -> bytes:

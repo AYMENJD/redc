@@ -378,6 +378,7 @@ static py_tuple make_result_tuple(const Result &result) {
 
   auto http_version = get_http_version_from_bit(result.http_version);
 
+  auto connect_time = result.connect_time;
   auto elapsed = result.elapsed;
 
   auto curl_error = ok ? ""
@@ -385,8 +386,9 @@ static py_tuple make_result_tuple(const Result &result) {
                         ? result.request->errbuf
                         : curl_easy_strerror(result.curl_code);
 
-  return nb::make_tuple(status_code, headers, body, url, http_version, elapsed,
-                        (int)result.curl_code, curl_error);
+  return nb::make_tuple(status_code, headers, body, url, http_version,
+                        connect_time, elapsed, (int)result.curl_code,
+                        curl_error);
 }
 
 void RedC::worker_loop() {
@@ -456,12 +458,14 @@ void RedC::worker_loop() {
       long response_code = -1;
       char *url = nullptr;
       long http_version = 0;
+      curl_off_t connect_time = 0;
       curl_off_t elapsed = 0;
 
       if (curl_code == CURLE_OK) {
         curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &url);
         curl_easy_getinfo(easy, CURLINFO_HTTP_VERSION, &http_version);
+        curl_easy_getinfo(easy, CURLINFO_CONNECT_TIME_T, &connect_time);
         curl_easy_getinfo(easy, CURLINFO_TOTAL_TIME_T, &elapsed);
       }
 
@@ -472,8 +476,15 @@ void RedC::worker_loop() {
         auto req = std::move(it->second);
         active.erase(it);
 
-        result_batch.push_back(Result{std::move(req), curl_code, response_code,
-                                      url, http_version, elapsed});
+        result_batch.push_back(Result{
+            std::move(req),
+            curl_code,
+            response_code,
+            url,
+            http_version,
+            connect_time,
+            elapsed,
+        });
       }
 
       release_handle(easy);

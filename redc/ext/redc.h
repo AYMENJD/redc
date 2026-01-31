@@ -92,6 +92,7 @@ struct Result {
   long response_code;
   char *url;
   long http_version;
+  curl_off_t connect_time;
   curl_off_t elapsed;
 };
 
