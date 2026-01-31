@@ -21,6 +21,7 @@ class Response:
         download_size: int,
         download_speed: int,
         upload_size: int,
+        upload_speed: int,
         elapsed: int,
         curl_code: int,
         curl_error_message: str,
@@ -69,6 +70,9 @@ class Response:
 
         self.upload_size = upload_size
         """Total number of bytes uploaded"""
+
+        self.upload_speed = upload_speed
+        """Average upload speed in bytes per second"""
 
         self.elapsed_us = elapsed
         """Elapsed time in microseconds"""

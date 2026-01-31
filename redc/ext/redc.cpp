@@ -385,6 +385,7 @@ static py_tuple make_result_tuple(const Result &result) {
   auto download_size = result.download_size;
   auto download_speed = result.download_speed;
   auto upload_size = result.upload_size;
+  auto upload_speed = result.upload_speed;
   auto elapsed = result.elapsed;
 
   auto curl_error = ok ? ""
@@ -392,10 +393,10 @@ static py_tuple make_result_tuple(const Result &result) {
                         ? result.request->errbuf
                         : curl_easy_strerror(result.curl_code);
 
-  return nb::make_tuple(status_code, headers, body, url, http_version,
-                        redirect_count, dns_time, connect_time, tls_time,
-                        download_size, download_speed, upload_size, elapsed,
-                        (int)result.curl_code, curl_error);
+  return nb::make_tuple(
+      status_code, headers, body, url, http_version, redirect_count, dns_time,
+      connect_time, tls_time, download_size, download_speed, upload_size,
+      upload_speed, elapsed, (int)result.curl_code, curl_error);
 }
 
 void RedC::worker_loop() {
@@ -472,6 +473,7 @@ void RedC::worker_loop() {
       curl_off_t download_size = 0;
       curl_off_t download_speed = 0;
       curl_off_t upload_size = 0;
+      curl_off_t upload_speed = 0;
       curl_off_t elapsed = 0;
 
       if (curl_code == CURLE_OK) {
@@ -485,6 +487,7 @@ void RedC::worker_loop() {
         curl_easy_getinfo(easy, CURLINFO_SIZE_DOWNLOAD_T, &download_size);
         curl_easy_getinfo(easy, CURLINFO_SPEED_DOWNLOAD_T, &download_speed);
         curl_easy_getinfo(easy, CURLINFO_SIZE_UPLOAD_T, &upload_size);
+        curl_easy_getinfo(easy, CURLINFO_SPEED_UPLOAD_T, &upload_speed);
         curl_easy_getinfo(easy, CURLINFO_TOTAL_TIME_T, &elapsed);
       }
 
@@ -508,6 +511,7 @@ void RedC::worker_loop() {
             download_size,
             download_speed,
             upload_size,
+            upload_speed,
             elapsed,
         });
       }

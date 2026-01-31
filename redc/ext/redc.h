@@ -100,6 +100,7 @@ struct Result {
   curl_off_t download_size;
   curl_off_t download_speed;
   curl_off_t upload_size;
+  curl_off_t upload_speed;
   curl_off_t elapsed;
 };
 
