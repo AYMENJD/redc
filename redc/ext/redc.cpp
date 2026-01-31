@@ -239,7 +239,7 @@ py_object RedC::request(const char *method, const char *url,
                         const py_object &headers, const py_object &cookies,
                         const char *http_version, const long &timeout_ms,
                         const long &connect_timeout_ms,
-                        const bool &allow_redirects, const char *proxy_url,
+                        const py_object &allow_redirects, const char *proxy_url,
                         const py_object &auth, const bool &verify,
                         const char *cert, const py_object &stream_callback,
                         const py_object &progress_callback,
@@ -292,9 +292,31 @@ py_object RedC::request(const char *method, const char *url,
       curl_easy_setopt(easy, CURLOPT_WRITEFUNCTION, &RedC::write_callback);
     }
 
-    if (allow_redirects) {
-      curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
-      curl_easy_setopt(easy, CURLOPT_MAXREDIRS, 30L);
+    if (!allow_redirects.is_none()) {
+
+      if (nb::isinstance<nb::bool_>(allow_redirects)) {
+        bool follow = nb::cast<bool>(allow_redirects);
+
+        if (follow) {
+          curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+          curl_easy_setopt(easy, CURLOPT_MAXREDIRS, 30L);
+        } else {
+          curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 0L);
+        }
+
+      } else if (nb::isinstance<nb::int_>(allow_redirects)) {
+        long max_redirs = nb::cast<long>(allow_redirects);
+
+        if (max_redirs > 0) {
+          curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
+          curl_easy_setopt(easy, CURLOPT_MAXREDIRS, max_redirs);
+        } else {
+          curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 0L);
+        }
+
+      } else {
+        throw std::invalid_argument("allow_redirects must be bool or int");
+      }
     }
 
     if (!isNullOrEmpty(proxy_url)) {

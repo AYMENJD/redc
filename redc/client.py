@@ -173,7 +173,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirects: bool = True,
+        allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
         auth: Union[tuple, str] = None,
         verify: bool = True,
@@ -237,8 +237,9 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool``, *optional*):
-                Whether to allow redirects. Default is ``True``
+            allow_redirects (``bool`` || ``int``, *optional*):
+                Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
+                ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
@@ -337,7 +338,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirects: bool = True,
+        allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -374,8 +375,9 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool``, *optional*):
-                Whether to allow redirects. Default is ``True``
+            allow_redirects (``bool`` || ``int``, *optional*):
+                Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
+                ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
@@ -429,7 +431,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirects: bool = True,
+        allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -464,8 +466,9 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool``, *optional*):
-                Whether to allow redirects. Default is ``True``
+            allow_redirects (``bool`` || ``int``, *optional*):
+                Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
+                ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
@@ -514,7 +517,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirects: bool = True,
+        allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -579,8 +582,9 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool``, *optional*):
-                Whether to allow redirects. Default is ``True``
+            allow_redirects (``bool`` || ``int``, *optional*):
+                Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
+                ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
@@ -640,7 +644,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirects: bool = True,
+        allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -705,8 +709,9 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool``, *optional*):
-                Whether to allow redirects. Default is ``True``
+            allow_redirects (``bool`` || ``int``, *optional*):
+                Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
+                ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
@@ -766,7 +771,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirects: bool = True,
+        allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -831,8 +836,9 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool``, *optional*):
-                Whether to allow redirects. Default is ``True``
+            allow_redirects (``bool`` || ``int``, *optional*):
+                Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
+                ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
@@ -889,7 +895,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirects: bool = True,
+        allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -926,8 +932,9 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool``, *optional*):
-                Whether to allow redirects. Default is ``True``
+            allow_redirects (``bool`` || ``int``, *optional*):
+                Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
+                ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
@@ -981,7 +988,7 @@ class Client:
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
         timeout: tuple = None,
-        allow_redirects: bool = True,
+        allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -1016,8 +1023,9 @@ class Client:
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool``, *optional*):
-                Whether to allow redirects. Default is ``True``
+            allow_redirects (``bool`` || ``int``, *optional*):
+                Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
+                ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).

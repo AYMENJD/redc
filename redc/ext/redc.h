@@ -27,6 +27,8 @@ using acq_gil = nb::gil_scoped_acquire;
 using rel_gil = nb::gil_scoped_release;
 
 using py_object = nb::object;
+using py_bool = nb::bool_;
+using py_int = nb::int_;
 using py_str = nb::str;
 using py_bytes = nb::bytes;
 using py_tuple = nb::tuple;
@@ -120,9 +122,9 @@ public:
                     const py_object &data, const py_object &files,
                     const py_object &headers, const py_object &cookies,
                     const char *http_version, const long &timeout_ms,
-                    const long &connect_timeout_ms, const bool &allow_redirects,
-                    const char *proxy_url, const py_object &auth,
-                    const bool &verify, const char *cert,
+                    const long &connect_timeout_ms,
+                    const py_object &allow_redirects, const char *proxy_url,
+                    const py_object &auth, const bool &verify, const char *cert,
                     const py_object &stream_callback,
                     const py_object &progress_callback, const bool &verbose);
 
