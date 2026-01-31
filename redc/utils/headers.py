@@ -1,6 +1,5 @@
 import re
 
-
 LINK_SPLITTER = re.compile(r",(?=\s*<)")
 LINK_MATCHER = re.compile(r"\s*<([^>]+)>\s*(.*)")
 PARAM_MATCHER = re.compile(r';\s*([a-zA-Z0-9\-\*]+)\s*=\s*(?:"([^"]*)"|([^,;]*))')

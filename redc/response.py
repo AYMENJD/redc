@@ -2,7 +2,7 @@ from functools import lru_cache
 from typing import Union
 
 from .codes import HTTPStatus
-from .exceptions import HTTPError
+from .exceptions import HTTPError, exception_from_code
 from .utils import Headers, json_loads, parse_link_header
 
 
@@ -123,13 +123,18 @@ class Response:
 
     def json(self):
         """Parses the response content as JSON"""
+
         if self.status_code != -1:
             return json_loads(self.__response)
 
     def raise_for_status(self):
         """Raises an HTTPError if the response status indicates an error"""
-        if self.status_code == -1 or (400 <= self.status_code <= 599):
-            raise HTTPError(self.status_code, self.curl_code, self.curl_error_message)
+
+        if self.status_code == -1:
+            raise exception_from_code(self.curl_code)
+
+        if 400 <= self.status_code <= 599:
+            raise HTTPError(self.status_code, f"{self.status_code}: {self.reason}")
 
     def __bool__(self):
         return self.status_code != -1 and 200 <= self.status_code <= 299
