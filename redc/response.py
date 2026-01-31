@@ -14,6 +14,7 @@ class Response:
         response: bytes,
         url: str,
         http_version: str,
+        dns_time: int,
         connect_time: int,
         tls_time: int,
         elapsed: int,
@@ -43,6 +44,8 @@ class Response:
         self.http_version = http_version
         """Used HTTP version"""
 
+        self.dns_time_microseconds = dns_time
+        """DNS lookup time in microseconds"""
         self.connect_time_microseconds = connect_time
         """TCP connect time in microseconds"""
         self.tls_time_microseconds = (
@@ -59,6 +62,12 @@ class Response:
 
         if raise_for_status:
             self.raise_for_status()
+
+    @property
+    def dns_time(self) -> float:
+        """DNS lookup time in seconds"""
+
+        return self.dns_time_microseconds / 1_000_000
 
     @property
     def connect_time(self) -> float:
