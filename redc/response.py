@@ -128,7 +128,7 @@ class Response:
             return json_loads(self.__response)
 
     def raise_for_status(self):
-        """Raises an HTTPError if the response status indicates an error"""
+        """Raises an HTTPError/CurlError if the response indicates an error"""
 
         if self.status_code == -1:
             raise exception_from_code(self.curl_code)
@@ -141,18 +141,4 @@ class Response:
 
     @classmethod
     def from_result(cls, result, *, raise_for_status=False):
-        if len(result) == 2:
-            curl_code, message = result
-            return cls(
-                status_code=-1,
-                headers=None,
-                response=None,
-                url=None,
-                http_version=None,
-                elapsed=0.0,
-                curl_code=curl_code,
-                curl_error_message=message,
-                raise_for_status=raise_for_status,
-            )
-
-        return cls(*result, curl_error_message=None, raise_for_status=raise_for_status)
+        return cls(*result, raise_for_status=raise_for_status)

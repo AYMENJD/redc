@@ -363,38 +363,30 @@ py_object RedC::request(const char *method, const char *url,
   }
 }
 
-static py_tuple make_error_tuple(int code, const char *msg) {
-  return nb::make_tuple(code, msg);
-}
-
 static py_tuple make_result_tuple(const Result &result) {
+  const bool ok = (result.curl_code == CURLE_OK);
 
-  if (result.curl_code == CURLE_OK) {
-    return nb::make_tuple(
-        // HTTP response status code. If the value is -1, it indicates a cURL
-        // error occurred
-        result.response_code,
-        // Response headers as bytes; can be null
-        py_bytes(result.request->headers.data(),
-                 result.request->headers.size()),
-        // The actual response data as bytes; can be null
-        py_bytes(result.request->response.data(),
-                 result.request->response.size()),
-        // Final effective URL used for the request
-        result.url,
-        // The HTTP version of the transfer
-        get_http_version_from_bit(result.http_version),
-        // Total time for the transfer
-        result.elapsed,
-        // cURL return code. This indicates the result code of the cURL
-        // operation. See: https://curl.se/libcurl/c/libcurl-errors.html
-        (int)result.curl_code);
-  }
+  const int status_code = ok ? result.response_code : -1;
 
-  return make_error_tuple((int)result.curl_code,
-                          result.request->errbuf[0]
-                              ? result.request->errbuf
-                              : curl_easy_strerror(result.curl_code));
+  auto headers =
+      py_bytes(result.request->headers.data(), result.request->headers.size());
+
+  auto body = py_bytes(result.request->response.data(),
+                       result.request->response.size());
+
+  auto url = result.url;
+
+  auto http_version = get_http_version_from_bit(result.http_version);
+
+  auto elapsed = result.elapsed;
+
+  auto curl_error = ok ? ""
+                    : result.request->errbuf[0]
+                        ? result.request->errbuf
+                        : curl_easy_strerror(result.curl_code);
+
+  return nb::make_tuple(status_code, headers, body, url, http_version, elapsed,
+                        (int)result.curl_code, curl_error);
 }
 
 void RedC::worker_loop() {
@@ -461,10 +453,10 @@ void RedC::worker_loop() {
     result_batch.reserve(done_handles.size());
 
     for (auto &[easy, curl_code] : done_handles) {
-      long response_code;
-      char *url;
-      long http_version;
-      curl_off_t elapsed;
+      long response_code = -1;
+      char *url = nullptr;
+      long http_version = 0;
+      curl_off_t elapsed = 0;
 
       if (curl_code == CURLE_OK) {
         curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &response_code);
