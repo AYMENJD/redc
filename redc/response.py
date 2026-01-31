@@ -14,6 +14,7 @@ class Response:
         response: bytes,
         url: str,
         http_version: str,
+        redirect_count: int,
         dns_time: int,
         connect_time: int,
         tls_time: int,
@@ -43,6 +44,8 @@ class Response:
 
         self.http_version = http_version
         """Used HTTP version"""
+        self.redirect_count = redirect_count
+        """Number of redirects followed"""
 
         self.dns_time_us = dns_time
         """DNS lookup time in microseconds"""

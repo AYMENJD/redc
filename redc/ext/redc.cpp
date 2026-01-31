@@ -377,6 +377,7 @@ static py_tuple make_result_tuple(const Result &result) {
   auto url = result.url;
 
   auto http_version = get_http_version_from_bit(result.http_version);
+  auto redirect_count = result.redirect_count;
 
   auto dns_time = result.dns_time;
   auto connect_time = result.connect_time;
@@ -388,9 +389,9 @@ static py_tuple make_result_tuple(const Result &result) {
                         ? result.request->errbuf
                         : curl_easy_strerror(result.curl_code);
 
-  return nb::make_tuple(status_code, headers, body, url, http_version, dns_time,
-                        connect_time, tls_time, elapsed, (int)result.curl_code,
-                        curl_error);
+  return nb::make_tuple(status_code, headers, body, url, http_version,
+                        redirect_count, dns_time, connect_time, tls_time,
+                        elapsed, (int)result.curl_code, curl_error);
 }
 
 void RedC::worker_loop() {
@@ -460,6 +461,7 @@ void RedC::worker_loop() {
       long response_code = -1;
       char *url = nullptr;
       long http_version = 0;
+      long redirect_count = 0;
       curl_off_t dns_time = 0;
       curl_off_t connect_time = 0;
       curl_off_t tls_time = 0;
@@ -469,6 +471,7 @@ void RedC::worker_loop() {
         curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &url);
         curl_easy_getinfo(easy, CURLINFO_HTTP_VERSION, &http_version);
+        curl_easy_getinfo(easy, CURLINFO_REDIRECT_COUNT, &redirect_count);
         curl_easy_getinfo(easy, CURLINFO_NAMELOOKUP_TIME_T, &dns_time);
         curl_easy_getinfo(easy, CURLINFO_CONNECT_TIME_T, &connect_time);
         curl_easy_getinfo(easy, CURLINFO_APPCONNECT_TIME_T, &tls_time);
@@ -488,6 +491,7 @@ void RedC::worker_loop() {
             response_code,
             url,
             http_version,
+            redirect_count,
             dns_time,
             connect_time,
             tls_time,
