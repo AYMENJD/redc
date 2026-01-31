@@ -15,6 +15,7 @@ class Response:
         url: str,
         http_version: str,
         connect_time: float,
+        tls_time: float,
         elapsed: float,
         curl_code: int,
         curl_error_message: str,
@@ -43,7 +44,11 @@ class Response:
         """Used HTTP version"""
 
         self.connect_time_microseconds = connect_time
-        """Connect time in microseconds"""
+        """TCP connect time in microseconds"""
+        self.tls_time_microseconds = (
+            tls_time - connect_time if tls_time and tls_time >= connect_time else 0
+        )
+        """TLS handshake time in microseconds"""
         self.elapsed_microseconds = elapsed
         """Elapsed time in microseconds"""
 
@@ -57,9 +62,15 @@ class Response:
 
     @property
     def connect_time(self) -> float:
-        """Connect time in seconds"""
+        """TCP connect time in seconds"""
 
         return self.connect_time_microseconds / 1_000_000
+
+    @property
+    def tls_time(self) -> float:
+        """TLS handshake time in seconds"""
+
+        return self.tls_time_microseconds / 1_000_000
 
     @property
     def elapsed(self) -> float:
