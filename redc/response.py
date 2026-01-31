@@ -18,6 +18,7 @@ class Response:
         dns_time: int,
         connect_time: int,
         tls_time: int,
+        download_size: int,
         elapsed: int,
         curl_code: int,
         curl_error_message: str,
@@ -55,6 +56,8 @@ class Response:
             tls_time - connect_time if tls_time and tls_time >= connect_time else 0
         )
         """TLS handshake time in microseconds"""
+        self.download_size = download_size
+        """Total number of bytes downloaded"""
         self.elapsed_us = elapsed
         """Elapsed time in microseconds"""
 
