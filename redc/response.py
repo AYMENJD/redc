@@ -19,6 +19,7 @@ class Response:
         connect_time: int,
         tls_time: int,
         download_size: int,
+        download_speed: int,
         upload_size: int,
         elapsed: int,
         curl_code: int,
@@ -62,6 +63,9 @@ class Response:
 
         self.download_size = download_size
         """Total number of bytes downloaded"""
+
+        self.download_speed = download_speed
+        """Average download speed in bytes per second"""
 
         self.upload_size = upload_size
         """Total number of bytes uploaded"""
