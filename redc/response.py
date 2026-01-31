@@ -44,15 +44,15 @@ class Response:
         self.http_version = http_version
         """Used HTTP version"""
 
-        self.dns_time_microseconds = dns_time
+        self.dns_time_us = dns_time
         """DNS lookup time in microseconds"""
-        self.connect_time_microseconds = connect_time
+        self.connect_time_us = connect_time
         """TCP connect time in microseconds"""
-        self.tls_time_microseconds = (
+        self.tls_time_us = (
             tls_time - connect_time if tls_time and tls_time >= connect_time else 0
         )
         """TLS handshake time in microseconds"""
-        self.elapsed_microseconds = elapsed
+        self.elapsed_us = elapsed
         """Elapsed time in microseconds"""
 
         self.curl_code = curl_code
@@ -67,25 +67,25 @@ class Response:
     def dns_time(self) -> float:
         """DNS lookup time in seconds"""
 
-        return self.dns_time_microseconds / 1_000_000
+        return self.dns_time_us / 1_000_000
 
     @property
     def connect_time(self) -> float:
         """TCP connect time in seconds"""
 
-        return self.connect_time_microseconds / 1_000_000
+        return self.connect_time_us / 1_000_000
 
     @property
     def tls_time(self) -> float:
         """TLS handshake time in seconds"""
 
-        return self.tls_time_microseconds / 1_000_000
+        return self.tls_time_us / 1_000_000
 
     @property
     def elapsed(self) -> float:
         """Elapsed time in seconds"""
 
-        return self.elapsed_microseconds / 1_000_000
+        return self.elapsed_us / 1_000_000
 
     @property
     def content(self) -> bytes:
