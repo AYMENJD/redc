@@ -13,7 +13,7 @@ JSON_ENCODER = json.__name__
 if JSON_ENCODER == "orjson":
 
     def json_dumps(
-        obj, encode: bool = False, null_terminated: bool = False
+        obj, encode: bool = True, null_terminated: bool = False
     ) -> Union[str, bytes]:
         d = json.dumps(obj)
         if null_terminated:
@@ -23,7 +23,7 @@ if JSON_ENCODER == "orjson":
 else:
 
     def json_dumps(
-        obj, encode: bool = False, null_terminated: bool = False
+        obj, encode: bool = True, null_terminated: bool = False
     ) -> Union[str, bytes]:
         d = json.dumps(obj, separators=(",", ":"))
         return d if not encode else d.encode("utf-8")

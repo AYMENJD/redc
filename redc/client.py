@@ -1,6 +1,6 @@
 import asyncio
 from functools import lru_cache
-from typing import BinaryIO, Literal, Union
+from typing import BinaryIO, Callable, Literal, Union
 
 import trustifi
 
@@ -26,7 +26,7 @@ class Client:
         cert: str = None,
         force_verbose: bool = None,
         raise_for_status: bool = False,
-        json_encoder=json_dumps,
+        json_encoder: Callable[..., bytes] = json_dumps,
     ):
         """
         Initialize the RedC client
@@ -109,7 +109,7 @@ class Client:
         self.__empty_set = {"", None}
         self.__timeout = timeout
         self.__cert = cert if isinstance(cert, str) else trustifi.where()
-        self.__json_encoder = json_encoder
+        self.json_encoder = json_encoder
         self.__loop = asyncio.get_event_loop()
         self.__redc_ext = RedC(read_buffer_size, persist_cookies)
 
@@ -286,7 +286,7 @@ class Client:
             )
 
         if json is not None:
-            json = self.__json_encoder(json, encode=True)
+            json = self.json_encoder(json)
             if headers is None:
                 headers = {}
             headers["Content-Type"] = "application/json"
