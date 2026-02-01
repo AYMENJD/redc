@@ -315,11 +315,13 @@ py_object RedC::request(const char *method, const char *url,
       curl_easy_setopt(easy, CURLOPT_PROXY, proxy_url);
     }
 
+    if (!isNullOrEmpty(cert)) {
+      curl_easy_setopt(easy, CURLOPT_CAINFO, cert);
+    }
+
     if (!verify) {
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYPEER, 0L);
       curl_easy_setopt(easy, CURLOPT_SSL_VERIFYHOST, 0L);
-    } else if (!isNullOrEmpty(cert)) {
-      curl_easy_setopt(easy, CURLOPT_CAINFO, cert);
     }
 
     RequestBuilder::set_cookies(easy, cookies);

@@ -37,7 +37,7 @@ class Client:
                 >>> client = Client(base_url="https://example.com")
                 >>> response = await client.get("/api/data")
 
-        Parameters:
+        Args:
             base_url (``str``, *optional*):
                 The base URL for the client. Default is ``None``
 
@@ -50,7 +50,7 @@ class Client:
             persist_cookies (``bool``, *optional*):
                 Whether to persist cookies across requests. Default is ``False``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
@@ -141,17 +141,18 @@ class Client:
     @lru_cache
     def curl_version(self) -> str:
         """Return current installed curl version info"""
+
         return self.__redc_ext.curl_version()
 
     def get_cookies(self, netscape: bool = False) -> Union[list[dict], list[str]]:
         """Retrieves currently stored session cookies
 
-        Parameters:
+        Args:
             netscape (``bool``, *optional*):
                 If ``True``, returns raw Netscape-formatted strings; if ``False``, returns dicts. Default is ``False``
 
         Returns:
-            ``list[dict] | list[str]``
+            ``list[dict]`` | ``list[str]``
         """
 
         return self.__redc_ext.get_cookies(netscape)
@@ -190,14 +191,14 @@ class Client:
 
                 >>> response = await client.request("GET", "/api/data", headers={"Authorization": "Bearer token"})
 
-        Parameters:
+        Args:
             method (``str``):
                 The HTTP method to use (e.g., "GET", "POST")
 
             url (``str``):
                 The URL to send the request to or path if ``base_url`` is specified in ``Client``
 
-            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+            params (``dict[str, str]`` | ``tuple[str, str]`` | ``str`` | ``bytes``, *optional*):
                 Query parameters to include in the request. Default is ``None``
 
             json (``dict``, *optional*):
@@ -212,7 +213,7 @@ class Client:
                 Default is ``None``
 
             files (``dict``, *optional*):
-                Dictionary of ``'name': file-val`` for multipart encoding upload.
+                Dictionary of ``name': file-val`` for multipart encoding upload.
                 ``file-val`` can be
                 - A **string** (file path).
                 - **bytes** (file content).
@@ -230,21 +231,21 @@ class Client:
             cookies (``dict[str, str]``, *optional*):
                 Cookies to include in the request. Default is ``None``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool`` || ``int``, *optional*):
+            allow_redirects (``bool`` | ``int``, *optional*):
                 Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
                 ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
-            auth (``tuple`` || ``str``, *optional*):
+            auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
@@ -355,11 +356,11 @@ class Client:
 
                 >>> response = await client.get("/api/data", headers={"Authorization": "Bearer token"})
 
-        Parameters:
+        Args:
             url (``str``):
                 The URL to send the GET request to or path if ``base_url`` is specified in ``Client``
 
-            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+            params (``dict[str, str]`` | ``tuple[str, str]`` | ``str`` | ``bytes``, *optional*):
                 Query parameters to include in the request. Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
@@ -368,21 +369,21 @@ class Client:
             cookies (``dict[str, str]``, *optional*):
                 Cookies to include in the request. Default is ``None``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool`` || ``int``, *optional*):
+            allow_redirects (``bool`` | ``int``, *optional*):
                 Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
                 ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
-            auth (``tuple`` || ``str``, *optional*):
+            auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
@@ -446,11 +447,11 @@ class Client:
 
                 >>> response = await client.head("/api/data", headers={"Authorization": "Bearer token"})
 
-        Parameters:
+        Args:
             url (``str``):
                 The URL to send the HEAD request to or path if ``base_url`` is specified in ``Client``
 
-            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+            params (``dict[str, str]`` | ``tuple[str, str]`` | ``str`` | ``bytes``, *optional*):
                 Query parameters to include in the request. Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
@@ -459,21 +460,21 @@ class Client:
             cookies (``dict[str, str]``, *optional*):
                 Cookies to include in the request. Default is ``None``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool`` || ``int``, *optional*):
+            allow_redirects (``bool`` | ``int``, *optional*):
                 Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
                 ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
-            auth (``tuple`` || ``str``, *optional*):
+            auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
@@ -538,11 +539,11 @@ class Client:
                 ...     headers={"Authorization": "Bearer token"}
                 ... )
 
-        Parameters:
+        Args:
             url (``str``):
                 The URL to send the POST request to or path if ``base_url`` is specified in ``Client``
 
-            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+            params (``dict[str, str]`` | ``tuple[str, str]`` | ``str`` | ``bytes``, *optional*):
                 Query parameters to include in the request. Default is ``None``
 
             json (``Any``, *optional*):
@@ -557,7 +558,7 @@ class Client:
                 Default is ``None``
 
             files (``dict``, *optional*):
-                Dictionary of ``'name': file-val`` for multipart encoding upload.
+                Dictionary of ``name': file-val`` for multipart encoding upload.
                 ``file-val`` can be
                 - A **string** (file path).
                 - **bytes** (file content).
@@ -575,21 +576,21 @@ class Client:
             cookies (``dict[str, str]``, *optional*):
                 Cookies to include in the request. Default is ``None``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool`` || ``int``, *optional*):
+            allow_redirects (``bool`` | ``int``, *optional*):
                 Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
                 ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
-            auth (``tuple`` || ``str``, *optional*):
+            auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
@@ -665,11 +666,11 @@ class Client:
                 ...     headers={"Authorization": "Bearer token"}
                 ... )
 
-        Parameters:
+        Args:
             url (``str``):
                 The URL to send the PUT request to or path if ``base_url`` is specified in ``Client``
 
-            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+            params (``dict[str, str]`` | ``tuple[str, str]`` | ``str`` | ``bytes``, *optional*):
                 Query parameters to include in the request. Default is ``None``
 
             json (``Any``, *optional*):
@@ -684,7 +685,7 @@ class Client:
                 Default is ``None``
 
             files (``dict``, *optional*):
-                Dictionary of ``'name': file-val`` for multipart encoding upload.
+                Dictionary of ``name': file-val`` for multipart encoding upload.
                 ``file-val`` can be
                 - A **string** (file path).
                 - **bytes** (file content).
@@ -702,21 +703,21 @@ class Client:
             cookies (``dict[str, str]``, *optional*):
                 Cookies to include in the request. Default is ``None``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool`` || ``int``, *optional*):
+            allow_redirects (``bool`` | ``int``, *optional*):
                 Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
                 ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
-            auth (``tuple`` || ``str``, *optional*):
+            auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
@@ -792,11 +793,11 @@ class Client:
                 ...     headers={"Authorization": "Bearer token"}
                 ... )
 
-        Parameters:
+        Args:
             url (``str``):
                 The URL to send the PATCH request to or path if ``base_url`` is specified in ``Client``
 
-            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+            params (``dict[str, str]`` | ``tuple[str, str]`` | ``str`` | ``bytes``, *optional*):
                 Query parameters to include in the request. Default is ``None``
 
             json (``Any``, *optional*):
@@ -811,7 +812,7 @@ class Client:
                 Default is ``None``
 
             files (``dict``, *optional*):
-                Dictionary of ``'name': file-val`` for multipart encoding upload.
+                Dictionary of ``name': file-val`` for multipart encoding upload.
                 ``file-val`` can be
                 - A **string** (file path).
                 - **bytes** (file content).
@@ -829,21 +830,21 @@ class Client:
             cookies (``dict[str, str]``, *optional*):
                 Cookies to include in the request. Default is ``None``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool`` || ``int``, *optional*):
+            allow_redirects (``bool`` | ``int``, *optional*):
                 Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
                 ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
-            auth (``tuple`` || ``str``, *optional*):
+            auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
@@ -912,11 +913,11 @@ class Client:
 
                 >>> response = await client.delete("/api/data/1", headers={"Authorization": "Bearer token"})
 
-        Parameters:
+        Args:
             url (``str``):
                 The URL to send the DELETE request to or path if ``base_url`` is specified in ``Client``
 
-            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+            params (``dict[str, str]`` | ``tuple[str, str]`` | ``str`` | ``bytes``, *optional*):
                 Query parameters to include in the request. Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
@@ -925,21 +926,21 @@ class Client:
             cookies (``dict[str, str]``, *optional*):
                 Cookies to include in the request. Default is ``None``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool`` || ``int``, *optional*):
+            allow_redirects (``bool`` | ``int``, *optional*):
                 Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
                 ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
-            auth (``tuple`` || ``str``, *optional*):
+            auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
@@ -1003,11 +1004,11 @@ class Client:
 
                 >>> response = await client.options("/api/data", headers={"Authorization": "Bearer token"})
 
-        Parameters:
+        Args:
             url (``str``):
                 The URL to send the OPTIONS request to or path if ``base_url`` is specified in ``Client``
 
-            params (``Union[dict[str, str], tuple[str, str], str, bytes]``, *optional*):
+            params (``dict[str, str]`` | ``tuple[str, str]`` | ``str`` | ``bytes``, *optional*):
                 Query parameters to include in the request. Default is ``None``
 
             headers (``dict[str, str]``, *optional*):
@@ -1016,21 +1017,21 @@ class Client:
             cookies (``dict[str, str]``, *optional*):
                 Cookies to include in the request. Default is ``None``
 
-            http_version (``Literal['auto', '1', '1.1', '2', '3']``, *optional*):
+            http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
 
-            allow_redirects (``bool`` || ``int``, *optional*):
+            allow_redirects (``bool`` | ``int``, *optional*):
                 Whether to follow HTTP redirects. ``True`` enables redirects with a default limit of ``30``.
                 ``int`` sets a custom limit, ``False`` disables redirects. Default is ``True``
 
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
-            auth (``tuple`` || ``str``, *optional*):
+            auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
 
