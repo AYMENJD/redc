@@ -293,27 +293,19 @@ py_object RedC::request(const char *method, const char *url,
     }
 
     if (!allow_redirects.is_none()) {
+      bool follow;
+      long max_redirs;
 
-      if (nb::isinstance<nb::bool_>(allow_redirects)) {
-        bool follow = nb::cast<bool>(allow_redirects);
-
-        if (follow) {
-          curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
-          curl_easy_setopt(easy, CURLOPT_MAXREDIRS, 30L);
-        } else {
-          curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 0L);
-        }
-
-      } else if (nb::isinstance<nb::int_>(allow_redirects)) {
-        long max_redirs = nb::cast<long>(allow_redirects);
-
+      if (nb::try_cast(allow_redirects, follow)) {
+        curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, follow ? 1L : 0L);
+        curl_easy_setopt(easy, CURLOPT_MAXREDIRS, follow ? 30L : 0L);
+      } else if (nb::try_cast(allow_redirects, max_redirs)) {
         if (max_redirs > 0) {
           curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 1L);
           curl_easy_setopt(easy, CURLOPT_MAXREDIRS, max_redirs);
         } else {
           curl_easy_setopt(easy, CURLOPT_FOLLOWLOCATION, 0L);
         }
-
       } else {
         throw std::invalid_argument("allow_redirects must be bool or int");
       }

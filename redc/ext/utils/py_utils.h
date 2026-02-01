@@ -11,14 +11,15 @@ using py_bytes = nb::bytes;
 using string = std::string;
 
 inline string get_as_string(const nb::handle &h) {
-  if (nb::isinstance<py_str>(h)) {
-    return nb::cast<string>(h);
+  string s_out;
+  if (nb::try_cast(h, s_out)) {
+    return s_out;
   }
 
-  if (nb::isinstance<py_bytes>(h)) {
-    auto b = nb::cast<py_bytes>(h);
-    return string(b.c_str(), b.size());
+  nb::bytes b_out;
+  if (nb::try_cast(h, b_out)) {
+    return string(b_out.c_str(), b_out.size());
   }
 
-  return nb::cast<string>(py_str(h));
+  return nb::cast<string>(nb::str(h));
 }
