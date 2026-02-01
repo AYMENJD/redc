@@ -186,7 +186,7 @@ class Response:
         """Raises an HTTPError/CurlError if the response indicates an error"""
 
         if self.status_code == -1:
-            raise exception_from_code(self.curl_code)
+            raise exception_from_code(self.curl_code, self.curl_error_message)
 
         if 400 <= self.status_code <= 599:
             raise HTTPError(self.status_code, f"{self.status_code}: {self.reason}")
