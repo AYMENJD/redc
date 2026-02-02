@@ -369,40 +369,28 @@ py_object RedC::request(const char *method, const char *url,
   }
 }
 
-static py_tuple make_result_tuple(const Result &result) {
-  const bool ok = (result.curl_code == CURLE_OK);
+static py_tuple make_result_tuple(const Result &r) {
+  const bool success = (r.curl_code == CURLE_OK);
 
-  const int status_code = ok ? result.response_code : -1;
+  const int status_code = success ? r.response_code : -1;
 
-  auto headers =
-      py_bytes(result.request->headers.data(), result.request->headers.size());
+  const auto headers =
+      py_bytes(r.request->headers.data(), r.request->headers.size());
 
-  auto body = py_bytes(result.request->response.data(),
-                       result.request->response.size());
+  const auto body =
+      py_bytes(r.request->response.data(), r.request->response.size());
 
-  auto url = result.url;
+  const py_object curl_error =
+      success ? nb::str("")
+              : nb::str(r.request->errbuf[0] ? r.request->errbuf
+                                             : curl_easy_strerror(r.curl_code));
 
-  auto http_version = get_http_version_from_bit(result.http_version);
-  auto redirect_count = result.redirect_count;
-
-  auto dns_time = result.dns_time;
-  auto connect_time = result.connect_time;
-  auto tls_time = result.tls_time;
-  auto download_size = result.download_size;
-  auto download_speed = result.download_speed;
-  auto upload_size = result.upload_size;
-  auto upload_speed = result.upload_speed;
-  auto elapsed = result.elapsed;
-
-  auto curl_error = ok ? ""
-                    : result.request->errbuf[0]
-                        ? result.request->errbuf
-                        : curl_easy_strerror(result.curl_code);
-
-  return nb::make_tuple(
-      status_code, headers, body, url, http_version, redirect_count, dns_time,
-      connect_time, tls_time, download_size, download_speed, upload_size,
-      upload_speed, elapsed, (int)result.curl_code, curl_error);
+  return nb::make_tuple(status_code, headers, body, r.url,
+                        get_http_version_from_bit(r.http_version),
+                        r.redirect_count, r.dns_time, r.connect_time,
+                        r.tls_time, r.download_size, r.download_speed,
+                        r.upload_size, r.upload_speed, r.elapsed,
+                        static_cast<int>(r.curl_code), curl_error);
 }
 
 void RedC::worker_loop() {
@@ -476,24 +464,19 @@ void RedC::worker_loop() {
     result_batch.reserve(done_handles.size());
 
     for (auto &[easy, curl_code] : done_handles) {
-      long response_code = -1;
+      long response_code = -1, http_version = 0, redirect_count = 0;
       char *url = nullptr;
-      long http_version = 0;
-      long redirect_count = 0;
-      curl_off_t dns_time = 0;
-      curl_off_t connect_time = 0;
-      curl_off_t tls_time = 0;
-      curl_off_t download_size = 0;
-      curl_off_t download_speed = 0;
-      curl_off_t upload_size = 0;
-      curl_off_t upload_speed = 0;
-      curl_off_t elapsed = 0;
+
+      curl_off_t dns_time = 0, connect_time = 0, tls_time = 0,
+                 download_size = 0, download_speed = 0, upload_size = 0,
+                 upload_speed = 0, elapsed = 0;
 
       if (curl_code == CURLE_OK) {
         curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &response_code);
         curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &url);
         curl_easy_getinfo(easy, CURLINFO_HTTP_VERSION, &http_version);
         curl_easy_getinfo(easy, CURLINFO_REDIRECT_COUNT, &redirect_count);
+
         curl_easy_getinfo(easy, CURLINFO_NAMELOOKUP_TIME_T, &dns_time);
         curl_easy_getinfo(easy, CURLINFO_CONNECT_TIME_T, &connect_time);
         curl_easy_getinfo(easy, CURLINFO_APPCONNECT_TIME_T, &tls_time);
