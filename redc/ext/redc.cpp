@@ -380,10 +380,10 @@ static py_tuple make_result_tuple(const Result &r) {
   const auto body =
       py_bytes(r.request->response.data(), r.request->response.size());
 
-  const py_object curl_error =
-      success ? nb::str("")
-              : nb::str(r.request->errbuf[0] ? r.request->errbuf
-                                             : curl_easy_strerror(r.curl_code));
+  const py_str curl_error =
+      success ? py_str("")
+              : py_str(r.request->errbuf[0] ? r.request->errbuf
+                                            : curl_easy_strerror(r.curl_code));
 
   return nb::make_tuple(status_code, headers, body, r.url,
                         get_http_version_from_bit(r.http_version),
