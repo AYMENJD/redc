@@ -1078,12 +1078,38 @@ class Client:
         h = dict(self.__default_headers_lc)
         empty = self.__empty_set
 
-        if headers is not None:
-            if not isinstance(headers, dict):
-                raise TypeError("headers must be of type dict[str, str]")
+        if headers is None:
+            return [f"{k};" if v in empty else f"{k}: {v}" for k, v in h.items()]
 
-            for k, v in headers.items():
-                h[k.lower()] = v
+        if not isinstance(headers, dict):
+            raise TypeError("headers must be a dict")
+
+        for k, v in headers.items():
+            if not isinstance(k, (str, bytes)):
+                raise TypeError(
+                    f"header name must be str or bytes, got {type(k).__name__}"
+                )
+
+            if isinstance(k, bytes):
+                k = k.decode("latin-1")
+
+            k = k.strip().lower()
+            if not k:
+                raise ValueError("header name cannot be empty")
+
+            if v is None:
+                pass
+            elif isinstance(v, bytes):
+                v = v.decode("latin-1")
+            elif isinstance(v, str):
+                pass
+            else:
+                raise TypeError(
+                    f"header value for '{k}' must be str or bytes, "
+                    f"got {type(v).__name__}"
+                )
+
+            h[k] = v
 
         return [f"{k};" if v in empty else f"{k}: {v}" for k, v in h.items()]
 
