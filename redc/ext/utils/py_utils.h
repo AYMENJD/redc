@@ -6,12 +6,13 @@
 
 namespace nb = nanobind;
 
-using py_str = nb::str;
-using py_bytes = nb::bytes;
-using string = std::string;
+inline std::string get_as_string(const nb::handle &h) {
+  std::string s_out;
 
-inline string get_as_string(const nb::handle &h) {
-  string s_out;
+  if (h.is_none()) {
+    return s_out;
+  }
+
   if (nb::try_cast(h, s_out)) {
     return s_out;
   }
@@ -21,5 +22,5 @@ inline string get_as_string(const nb::handle &h) {
     return string(b_out.c_str(), b_out.size());
   }
 
-  return nb::cast<string>(nb::str(h));
+  return nb::cast<std::string>(nb::str(h));
 }
