@@ -442,8 +442,15 @@ void RedC::worker_loop() {
       curl_multi_perform(multi_handle_, &still_running_);
     }
 
+    long timeout_ms = -1;
+    curl_multi_timeout(multi_handle_, &timeout_ms);
+
+    if (timeout_ms < 0 || (active.empty() && !added_any)) {
+      timeout_ms = 100;
+    }
+
     int numfds = 0;
-    curl_multi_poll(multi_handle_, nullptr, 0, 100, &numfds);
+    curl_multi_poll(multi_handle_, nullptr, 0, (int)timeout_ms, &numfds);
 
     if (!running_) {
       break;
