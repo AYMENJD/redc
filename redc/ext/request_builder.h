@@ -7,6 +7,9 @@
 
 class RequestBuilder {
 public:
+  static void set_headers(CURL *easy, const py_object &headers,
+                          CurlSlist &curl_slist);
+
   static void set_cookies(CURL *easy, const py_object &cookies);
 
   static void set_auth(CURL *easy, const py_object &auth);

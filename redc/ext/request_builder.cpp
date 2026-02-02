@@ -5,6 +5,20 @@
 
 namespace nb = nanobind;
 
+void RequestBuilder::set_headers(CURL *easy, const py_object &headers,
+                                 CurlSlist &curl_slist) {
+  if (headers.is_none()) {
+    return;
+  }
+
+  for (auto handle : headers) {
+    string h = get_as_string(handle);
+    curl_slist.slist = curl_slist_append(curl_slist.slist, h.c_str());
+  }
+
+  curl_easy_setopt(easy, CURLOPT_HTTPHEADER, curl_slist.slist);
+}
+
 void RequestBuilder::set_cookies(CURL *easy, const py_object &cookies) {
   if (cookies.is_none()) {
     return;

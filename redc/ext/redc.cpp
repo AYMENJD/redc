@@ -340,18 +340,8 @@ py_object RedC::request(const char *method, const char *url,
 
     curl_easy_setopt(easy, CURLOPT_ERRORBUFFER, req->errbuf);
 
+    RequestBuilder::set_headers(easy, headers, req->request_headers);
     RequestBuilder::set_payload(easy, req.get(), raw_data, data, files);
-
-    CurlSlist slist_headers;
-    if (!headers.is_none()) {
-      for (auto handle : headers) {
-        string h = get_as_string(handle);
-        slist_headers.slist = curl_slist_append(slist_headers.slist, h.c_str());
-      }
-      curl_easy_setopt(easy, CURLOPT_HTTPHEADER, slist_headers.slist);
-    }
-
-    req->request_headers = std::move(slist_headers);
 
     curl_easy_setopt(easy, CURLOPT_HEADERDATA, req.get());
 
