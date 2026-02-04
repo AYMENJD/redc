@@ -67,18 +67,19 @@ RedC::RedC(const long &read_buffer_size, const bool &session)
   curl_multi_setopt(multi_handle_, CURLMOPT_MAXCONNECTS, 2048L);
   curl_multi_setopt(multi_handle_, CURLMOPT_MAX_CONCURRENT_STREAMS, 100L);
 
-  if (session_enabled_) {
-    share_handle_ = curl_share_init();
-    if (share_handle_) {
+  share_handle_ = curl_share_init();
+  if (share_handle_) {
+    curl_share_setopt(share_handle_, CURLSHOPT_LOCKFUNC, RedC::share_lock_cb);
+    curl_share_setopt(share_handle_, CURLSHOPT_UNLOCKFUNC,
+                      RedC::share_unlock_cb);
+    curl_share_setopt(share_handle_, CURLSHOPT_USERDATA, this);
+
+    if (session_enabled_) {
       curl_share_setopt(share_handle_, CURLSHOPT_SHARE, CURL_LOCK_DATA_COOKIE);
-      curl_share_setopt(share_handle_, CURLSHOPT_LOCKFUNC, RedC::share_lock_cb);
-      curl_share_setopt(share_handle_, CURLSHOPT_UNLOCKFUNC,
-                        RedC::share_unlock_cb);
-      curl_share_setopt(share_handle_, CURLSHOPT_USERDATA, this);
-    } else {
-      curl_multi_cleanup(multi_handle_);
-      throw std::runtime_error("Failed to create CURL share handle");
     }
+  } else {
+    curl_multi_cleanup(multi_handle_);
+    throw std::runtime_error("Failed to create CURL share handle");
   }
 
   try {
@@ -125,15 +126,11 @@ void RedC::close() {
 
 void RedC::share_lock_cb(CURL *handle, curl_lock_data data,
                          curl_lock_access access, RedC *self) {
-  if (data == CURL_LOCK_DATA_COOKIE) {
-    self->share_mutex_.lock();
-  }
+  self->share_mutex_.lock();
 }
 
 void RedC::share_unlock_cb(CURL *handle, curl_lock_data data, RedC *self) {
-  if (data == CURL_LOCK_DATA_COOKIE) {
-    self->share_mutex_.unlock();
-  }
+  self->share_mutex_.unlock();
 }
 
 py_dict RedC::parse_cookie_string(const char *cookie_line) {
@@ -256,11 +253,7 @@ py_object RedC::request(const char *method, const char *url,
   const bool is_nobody = is_head || (strcmp(method, "OPTIONS") == 0);
 
   try {
-    if (session_enabled_ && share_handle_) {
-      curl_easy_setopt(easy, CURLOPT_SHARE, share_handle_);
-      curl_easy_setopt(easy, CURLOPT_COOKIEFILE, "");
-    }
-
+    curl_easy_setopt(easy, CURLOPT_SHARE, share_handle_);
     curl_easy_setopt(easy, CURLOPT_URL, url);
     curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method);
     curl_easy_setopt(easy, CURLOPT_HTTP_VERSION,
@@ -277,6 +270,10 @@ py_object RedC::request(const char *method, const char *url,
 
     curl_easy_setopt(easy, CURLOPT_TIMEOUT_MS, timeout_ms);
     curl_easy_setopt(easy, CURLOPT_HEADERFUNCTION, &RedC::header_callback);
+
+    if (session_enabled_) {
+      curl_easy_setopt(easy, CURLOPT_COOKIEFILE, "");
+    }
 
     if (verbose) {
       curl_easy_setopt(easy, CURLOPT_VERBOSE, 1L);
