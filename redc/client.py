@@ -22,6 +22,12 @@ class Client:
         headers: dict = None,
         persist_cookies: bool = False,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = "3",
+        max_total_connections: int = 0,
+        max_host_connections: int = 0,
+        max_idle_connections: int = None,
+        max_concurrent_streams: int = 100,
+        pool_min_size: int = 8,
+        pool_max_size: int = 128,
         timeout: tuple = (30.0, 0.0),
         cert: str = None,
         force_verbose: bool = None,
@@ -42,7 +48,8 @@ class Client:
                 The base URL for the client. Default is ``None``
 
             read_buffer_size (``int``, *optional*):
-                The read buffer size for libcurl. Must be greater than ``1024`` bytes. Default is ``16384`` (16KB)
+                The read buffer size for libcurl. Must be greater than ``1024`` bytes.
+                Default is ``16384`` (16KB)
 
             headers (``dict``, *optional*):
                 Headers to include in every request. Default is ``None``
@@ -53,20 +60,49 @@ class Client:
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
+            max_total_connections (``int``, *optional*):
+                The maximum number of active TCP connections allowed simultaneously.
+                Set to ``0`` for unlimited. Default is ``0``
+
+            max_host_connections (``int``, *optional*):
+                The maximum number of active connections allowed per specific host.
+                Set to ``0`` for unlimited. Default is ``0``
+
+            max_idle_connections (``int``, *optional*):
+                The maximum size of the network connection cache (Keep-Alive).
+                These are TCP connections kept open for reuse after a request completes.
+                If ``None``, defaults to ``pool_max_size * 4``
+
+            max_concurrent_streams (``int``, *optional*):
+                The maximum number of concurrent streams allowed per HTTP/2 or HTTP/3 connection.
+                Default is ``100``
+
+            pool_min_size (``int``, *optional*):
+                The number of internal request handles to pre-allocate during initialization to reduce startup latency.
+                Default is ``8``
+
+            pool_max_size (``int``, *optional*):
+                The maximum number of reusable request handles to retain in the pool.
+                Excess handles created during high concurrency are destroyed rather than recycled.
+                Default is ``128``
+
             timeout (``tuple``, *optional*):
-                A tuple of `(total_timeout, connect_timeout)` in seconds to include in every request. Default is ``(30.0, 0.0)``
+                A tuple of ``(total_timeout, connect_timeout)`` in seconds.
+                Default is ``(30.0, 0.0)``
 
             cert (``str``, *optional*):
-                Path to a CA certificate bundle file for SSL/TLS verification. Default is ``None``, which uses the trustifi CA bundle
+                Path to a CA certificate bundle file for SSL/TLS verification.
+                Default is ``None`` (uses the [trustifi](https://github.com/AYMENJD/trustifi) CA bundle)
 
             force_verbose (``bool``, *optional*):
                 Force verbose output for all requests. Default is ``None``
 
             raise_for_status (``bool``, *optional*):
-                If ``True``, automatically raises an :class:`redc.HTTPError` for responses with HTTP status codes
-                indicating an error (i.e., 4xx or 5xx) or for CURL errors (e.g., network issues, timeouts). Default is ``False``
+                If ``True``, automatically raises an :class:`redc.exceptions.HTTPError` for responses with HTTP status codes
+                indicating an error (i.e., 4xx or 5xx) or base :class:`redc.exceptions.CurlError` for CURL errors (e.g., network issues, timeouts).
+                Default is ``False``
 
-            json_encoder (``Callable`` , *optional*):
+            json_encoder (``Callable``, *optional*):
                 A callable for encoding JSON data. Default is :class:`redc.utils.json_dumps`
         """
 
@@ -92,6 +128,15 @@ class Client:
             "read_buffer_size must be bigger than 1024 bytes"
         )
 
+        assert pool_min_size > 0, "pool_min_size must be greater than 0"
+        assert pool_max_size > 0, "pool_max_size must be greater than 0"
+        assert pool_max_size >= pool_min_size, (
+            "pool_max_size must be greater than or equal to pool_min_size"
+        )
+
+        if max_idle_connections is None:
+            max_idle_connections = pool_max_size * 4
+
         self.force_verbose = force_verbose
         self.raise_for_status = raise_for_status
 
@@ -111,7 +156,16 @@ class Client:
         self.__cert = cert if isinstance(cert, str) else trustifi.where()
         self.json_encoder = json_encoder
         self.__loop = asyncio.get_event_loop()
-        self.__redc_ext = RedC(read_buffer_size, persist_cookies)
+        self.__redc_ext = RedC(
+            read_buffer_size=read_buffer_size,
+            persist_cookies=persist_cookies,
+            max_total_connections=max_total_connections,
+            max_host_connections=max_host_connections,
+            max_idle_connections=max_idle_connections,
+            max_concurrent_streams=max_concurrent_streams,
+            pool_min_size=pool_min_size,
+            pool_max_size=pool_max_size,
+        )
 
         self.__set_default_headers()
 

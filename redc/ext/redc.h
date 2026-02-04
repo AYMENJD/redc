@@ -108,7 +108,10 @@ struct Result {
 
 class RedC {
 public:
-  RedC(const long &read_buffer_size, const bool &session);
+  RedC(const long &read_buffer_size, const bool &persist_cookies,
+       const long &max_total_connections, const long &max_host_connections,
+       const long &max_idle_connections, const long &max_concurrent_streams,
+       const long &pool_min_size, const long &pool_max_size);
   ~RedC();
 
   bool is_running();
@@ -134,6 +137,7 @@ private:
   int still_running_{0};
   long buffer_size_;
   bool session_enabled_;
+  long pool_max_size_;
 
   py_object asyncio_;
   py_object loop_;
@@ -153,6 +157,7 @@ private:
   void worker_loop();
   void CHECK_RUNNING();
 
+  CURL *create_handle();
   CURL *get_handle();
   void release_handle(CURL *easy);
 

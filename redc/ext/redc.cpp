@@ -45,8 +45,12 @@ static const char *get_http_version_from_bit(long version) {
   }
 }
 
-RedC::RedC(const long &read_buffer_size, const bool &session)
-    : session_enabled_(session), handle_pool_(1024), queue_(1024) {
+RedC::RedC(const long &read_buffer_size, const bool &persist_cookies,
+           const long &max_total_connections, const long &max_host_connections,
+           const long &max_idle_connections, const long &max_concurrent_streams,
+           const long &pool_min_size, const long &pool_max_size)
+    : session_enabled_(persist_cookies), handle_pool_(pool_max_size),
+      queue_(pool_max_size) {
   {
     acq_gil gil;
     asyncio_ = nb::module_::import_("asyncio");
@@ -56,16 +60,20 @@ RedC::RedC(const long &read_buffer_size, const bool &session)
 
   buffer_size_ = read_buffer_size;
   multi_handle_ = curl_multi_init();
+  pool_max_size_ = pool_max_size;
 
   if (!multi_handle_) {
     throw std::runtime_error("Failed to create CURL multi handle");
   }
 
   curl_multi_setopt(multi_handle_, CURLMOPT_PIPELINING, CURLPIPE_MULTIPLEX);
-  curl_multi_setopt(multi_handle_, CURLMOPT_MAX_TOTAL_CONNECTIONS, 1024L);
-  curl_multi_setopt(multi_handle_, CURLMOPT_MAX_HOST_CONNECTIONS, 64L);
-  curl_multi_setopt(multi_handle_, CURLMOPT_MAXCONNECTS, 2048L);
-  curl_multi_setopt(multi_handle_, CURLMOPT_MAX_CONCURRENT_STREAMS, 100L);
+  curl_multi_setopt(multi_handle_, CURLMOPT_MAX_TOTAL_CONNECTIONS,
+                    max_total_connections);
+  curl_multi_setopt(multi_handle_, CURLMOPT_MAX_HOST_CONNECTIONS,
+                    max_host_connections);
+  curl_multi_setopt(multi_handle_, CURLMOPT_MAXCONNECTS, max_idle_connections);
+  curl_multi_setopt(multi_handle_, CURLMOPT_MAX_CONCURRENT_STREAMS,
+                    max_concurrent_streams);
 
   share_handle_ = curl_share_init();
   if (share_handle_) {
@@ -83,6 +91,10 @@ RedC::RedC(const long &read_buffer_size, const bool &session)
   }
 
   try {
+    for (long x = 0; x < pool_min_size; ++x) {
+      handle_pool_.enqueue(create_handle());
+    }
+
     running_ = true;
     worker_thread_ = std::thread(&RedC::worker_loop, this);
   } catch (...) {
@@ -95,14 +107,8 @@ RedC::~RedC() { this->close(); }
 
 bool RedC::is_running() { return running_; }
 
-CURL *RedC::get_handle() {
-  CURL *easy = nullptr;
-  if (handle_pool_.try_dequeue(easy)) {
-    curl_easy_reset(easy);
-    return easy;
-  }
-
-  easy = curl_easy_init();
+CURL *RedC::create_handle() {
+  CURL *easy = curl_easy_init();
   if (!easy) {
     throw std::runtime_error("Failed to create CURL easy handle");
   }
@@ -110,7 +116,26 @@ CURL *RedC::get_handle() {
   return easy;
 }
 
-void RedC::release_handle(CURL *easy) { handle_pool_.enqueue(easy); }
+CURL *RedC::get_handle() {
+  CURL *easy = nullptr;
+  if (handle_pool_.try_dequeue(easy)) {
+    curl_easy_reset(easy);
+    return easy;
+  }
+
+  easy = create_handle();
+
+  return easy;
+}
+
+void RedC::release_handle(CURL *easy) {
+  if (handle_pool_.size_approx() >= pool_max_size_) {
+    curl_easy_cleanup(easy);
+    return;
+  }
+
+  handle_pool_.enqueue(easy);
+}
 
 void RedC::close() {
   if (running_) {
@@ -682,8 +707,12 @@ PyType_Slot slots[] = {{Py_tp_traverse, (void *)redc_tp_traverse},
 
 NB_MODULE(redc_ext, m) {
   nb::class_<RedC>(m, "RedC", nb::type_slots(slots))
-      .def(nb::init<const long &, const bool &>(), arg("buffer_size") = 16384,
-           arg("persist_cookies") = false)
+      .def(nb::init<const long &, const bool &, const long &, const long &,
+                    const long &, const long &, const long &, const long &>(),
+           arg("read_buffer_size"), arg("persist_cookies"),
+           arg("max_total_connections"), arg("max_host_connections"),
+           arg("max_idle_connections"), arg("max_concurrent_streams"),
+           arg("pool_min_size"), arg("pool_max_size"))
       .def("is_running", &RedC::is_running)
       .def("request", &RedC::request, arg("method"), arg("url"),
            arg("params") = nb::none(), arg("raw_data") = nb::none(),

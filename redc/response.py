@@ -183,7 +183,7 @@ class Response:
             return json_loads(self.__response)
 
     def raise_for_status(self):
-        """Raises an HTTPError/CurlError if the response indicates an error"""
+        """Raises an :class:`redc.exceptions.HTTPError` or :class:`redc.exceptions.CurlError` if the response indicates an error"""
 
         if self.status_code == -1:
             raise exception_from_code(self.curl_code, self.curl_error_message)
