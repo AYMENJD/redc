@@ -92,7 +92,7 @@ struct Result {
   CURLcode curl_code;
 
   long response_code;
-  char *url;
+  string url;
   long http_version;
   long redirect_count;
 

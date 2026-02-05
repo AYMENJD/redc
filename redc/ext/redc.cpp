@@ -520,7 +520,7 @@ void RedC::worker_loop() {
             std::move(req),
             curl_code,
             response_code,
-            url,
+            string(url ? url : ""),
             http_version,
             redirect_count,
             dns_time,
