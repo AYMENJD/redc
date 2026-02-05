@@ -22,12 +22,12 @@ class Client:
         headers: dict = None,
         persist_cookies: bool = False,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = "3",
-        max_total_connections: int = 0,
-        max_host_connections: int = 0,
-        max_idle_connections: int = None,
-        max_concurrent_streams: int = 100,
-        pool_min_size: int = 8,
-        pool_max_size: int = 128,
+        max_total_connections: int = 1024,
+        max_host_connections: int = 64,
+        max_idle_connections: int = 2048,
+        max_concurrent_streams: int = 200,
+        pool_min_size: int = 16,
+        pool_max_size: int = 512,
         timeout: tuple = (30.0, 0.0),
         cert: str = None,
         force_verbose: bool = None,
@@ -62,29 +62,29 @@ class Client:
 
             max_total_connections (``int``, *optional*):
                 The maximum number of active TCP connections allowed simultaneously.
-                Set to ``0`` for unlimited. Default is ``0``
+                Set to ``0`` for unlimited. Default is ``1024``
 
             max_host_connections (``int``, *optional*):
                 The maximum number of active connections allowed per specific host.
-                Set to ``0`` for unlimited. Default is ``0``
+                Set to ``0`` for unlimited. Default is ``64``
 
             max_idle_connections (``int``, *optional*):
                 The maximum size of the network connection cache (Keep-Alive).
                 These are TCP connections kept open for reuse after a request completes.
-                If ``None``, defaults to ``pool_max_size * 4``
+                Default is ``2048``
 
             max_concurrent_streams (``int``, *optional*):
                 The maximum number of concurrent streams allowed per HTTP/2 or HTTP/3 connection.
-                Default is ``100``
+                Default is ``200``
 
             pool_min_size (``int``, *optional*):
                 The number of internal request handles to pre-allocate during initialization to reduce startup latency.
-                Default is ``8``
+                Default is ``16``
 
             pool_max_size (``int``, *optional*):
                 The maximum number of reusable request handles to retain in the pool.
                 Excess handles created during high concurrency are destroyed rather than recycled.
-                Default is ``128``
+                Default is ``2048``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds.
@@ -128,14 +128,22 @@ class Client:
             "read_buffer_size must be bigger than 1024 bytes"
         )
 
-        assert pool_min_size > 0, "pool_min_size must be greater than 0"
+        assert max_total_connections >= 0, (
+            "max_total_connections must be greater than or equal to 0"
+        )
+        assert max_host_connections >= 0, (
+            "max_host_connections must be greater than or equal to 0"
+        )
+        assert max_idle_connections >= 0, "max_idle_connections must be greater than 0"
+        assert max_concurrent_streams >= 0, (
+            "max_concurrent_streams must be greater than or equal to 0"
+        )
+
+        assert pool_min_size >= 0, "pool_min_size must be greater than or equal to 0"
         assert pool_max_size > 0, "pool_max_size must be greater than 0"
         assert pool_max_size >= pool_min_size, (
             "pool_max_size must be greater than or equal to pool_min_size"
         )
-
-        if max_idle_connections is None:
-            max_idle_connections = pool_max_size * 4
 
         self.force_verbose = force_verbose
         self.raise_for_status = raise_for_status
