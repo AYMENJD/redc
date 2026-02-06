@@ -28,6 +28,7 @@ class Client:
         max_concurrent_streams: int = 200,
         pool_min_size: int = 16,
         pool_max_size: int = 512,
+        backend: Literal["threaded", "asyncio"] = "asyncio",
         timeout: tuple = (30.0, 0.0),
         cert: str = None,
         force_verbose: bool = None,
@@ -85,6 +86,25 @@ class Client:
                 The maximum number of reusable request handles to retain in the pool.
                 Excess handles created during high concurrency are destroyed rather than recycled.
                 Default is ``2048``
+
+            backend (``threaded`` | ``asyncio``, *optional*):
+                Selects the execution backend used by RedC.
+
+                ``asyncio`` is lightweight and performs best for low to moderate
+                concurrency, where only a small number of requests are active.
+                In such scenarios, it often provides lower latency and better
+                performance
+
+                ``threaded`` is optimized for higher concurrency and sustained load.
+                While it may be less efficient for very small workloads, it generally
+                achieves higher overall throughput (requests per second) as the number
+                of concurrent requests increases
+
+                As a rule of thumb:
+                    - Low concurrency → ``asyncio``
+                    - High concurrency → ``threaded``
+
+                Default is ``asyncio``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds.
@@ -144,6 +164,9 @@ class Client:
         assert pool_max_size >= pool_min_size, (
             "pool_max_size must be greater than or equal to pool_min_size"
         )
+        assert backend in ("threaded", "asyncio"), (
+            "backend must be one of 'threaded' or 'asyncio'"
+        )
 
         self.force_verbose = force_verbose
         self.raise_for_status = raise_for_status
@@ -173,6 +196,7 @@ class Client:
             max_concurrent_streams=max_concurrent_streams,
             pool_min_size=pool_min_size,
             pool_max_size=pool_max_size,
+            threaded=backend == "threaded",
         )
 
         self.__set_default_headers()

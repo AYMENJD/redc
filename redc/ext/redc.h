@@ -7,7 +7,6 @@
 #include <list>
 #include <mutex>
 #include <thread>
-#include <unordered_map>
 #include <vector>
 
 #include <curl/curl.h>
@@ -17,6 +16,7 @@
 #include <nanobind/stl/tuple.h>
 
 #include "utils/readerwriterqueue.h"
+#include "utils/unordered_dense.h"
 
 #include "utils/curl_utils.h"
 
@@ -106,16 +106,23 @@ struct Result {
   curl_off_t elapsed;
 };
 
+struct SocketChange {
+  curl_socket_t socket;
+  int what;
+};
+
 class RedC {
 public:
   RedC(const long &read_buffer_size, const bool &persist_cookies,
        const long &max_total_connections, const long &max_host_connections,
        const long &max_idle_connections, const long &max_concurrent_streams,
-       const long &pool_min_size, const long &pool_max_size);
+       const long &pool_min_size, const long &pool_max_size,
+       const bool &threaded);
   ~RedC();
 
   bool is_running();
   void close();
+  string redc_curl_version();
 
   py_list get_cookies(bool netscape);
   void clear_cookies();
@@ -131,28 +138,30 @@ public:
                     const py_object &stream_callback,
                     const py_object &progress_callback, const bool &verbose);
 
-  string redc_curl_version();
+  friend class RequestBuilder;
+  friend int redc_tp_traverse(PyObject *, visitproc, void *);
+  friend int redc_tp_clear(PyObject *);
 
 private:
-  int still_running_{0};
-  long buffer_size_;
-  bool session_enabled_;
-  long pool_max_size_;
+  static int socket_callback(CURL *e, curl_socket_t s, int what, void *userp,
+                             void *socketp);
+  static int timer_callback(CURLM *multi, long timeout_ms, void *userp);
 
-  py_object asyncio_;
-  py_object loop_;
-  py_object call_soon_threadsafe_;
+  static size_t read_callback(char *buffer, size_t size, size_t nitems,
+                              Request *clientp);
+  static size_t mime_read_callback(char *buffer, size_t size, size_t nitems,
+                                   void *arg);
+  static size_t header_callback(char *buffer, size_t size, size_t nitems,
+                                Request *clientp);
+  static size_t write_callback(char *data, size_t size, size_t nmemb,
+                               Request *clientp);
+  static size_t progress_callback(Request *clientp, curl_off_t dltotal,
+                                  curl_off_t dlnow, curl_off_t ultotal,
+                                  curl_off_t ulnow);
 
-  CURLM *multi_handle_{nullptr};
-  CURLSH *share_handle_{nullptr};
-
-  std::thread worker_thread_;
-  std::atomic<bool> running_{false};
-
-  std::mutex share_mutex_;
-
-  moodycamel::ReaderWriterQueue<CURL *> handle_pool_;
-  moodycamel::ReaderWriterQueue<PendingRequest> queue_;
+  static void share_lock_cb(CURL *handle, curl_lock_data data,
+                            curl_lock_access access, RedC *self);
+  static void share_unlock_cb(CURL *handle, curl_lock_data data, RedC *self);
 
   void worker_loop();
   void CHECK_RUNNING();
@@ -161,28 +170,54 @@ private:
   CURL *get_handle();
   void release_handle(CURL *easy);
 
-  static size_t read_callback(char *buffer, size_t size, size_t nitems,
-                              Request *clientp);
-  static size_t mime_read_callback(char *buffer, size_t size, size_t nitems,
-                                   void *arg);
-  static size_t header_callback(char *buffer, size_t size, size_t nitems,
-                                Request *clientp);
-  static size_t progress_callback(Request *clientp, curl_off_t dltotal,
-                                  curl_off_t dlnow, curl_off_t ultotal,
-                                  curl_off_t ulnow);
-  static size_t write_callback(char *data, size_t size, size_t nmemb,
-                               Request *clientp);
+  Result create_result(CURL *easy, CURLcode result_code,
+                       std::unique_ptr<Request> req);
+  void complete_request_future(Result &res);
+  void process_completed_transfers();
 
-  static void share_lock_cb(CURL *handle, curl_lock_data data,
-                            curl_lock_access access, RedC *self);
-  static void share_unlock_cb(CURL *handle, curl_lock_data data, RedC *self);
+  void on_socket_event(int fd, int action);
+  void on_timer_event();
+  void apply_socket_changes();
+  void process_all_socket_events();
 
   py_dict parse_cookie_string(const char *cookie_line);
 
-  friend class RequestBuilder;
+  std::atomic<bool> running_{false};
+  int still_running_{0};
+  long buffer_size_;
+  bool session_enabled_;
+  long pool_max_size_;
+  bool threaded_mode_;
 
-  friend int redc_tp_traverse(PyObject *, visitproc, void *);
-  friend int redc_tp_clear(PyObject *);
+  py_object asyncio_;
+  py_object loop_;
+  py_object call_soon_threadsafe_;
+  py_object loop_add_reader_;
+  py_object loop_remove_reader_;
+  py_object loop_add_writer_;
+  py_object loop_remove_writer_;
+  py_object loop_call_later_;
+
+  py_object timer_handle_{nb::none()};
+  py_object socket_event_callback_;
+  py_object timer_event_callback_;
+  py_object process_events_callback_;
+
+  CURLM *multi_handle_{nullptr};
+  CURLSH *share_handle_{nullptr};
+
+  std::thread worker_thread_;
+  std::mutex share_mutex_;
+  moodycamel::ReaderWriterQueue<CURL *> handle_pool_;
+  moodycamel::ReaderWriterQueue<PendingRequest> queue_;
+
+  bool process_scheduled_{false};
+  ankerl::unordered_dense::map<curl_socket_t, int> socket_map_;
+  ankerl::unordered_dense::map<CURL *, std::unique_ptr<Request>>
+      active_requests_;
+  std::vector<Result> completed_batch_;
+  std::vector<std::pair<int, int>> pending_socket_events_;
+  std::unordered_map<curl_socket_t, int> pending_socket_changes_;
 };
 
 #endif // REDC_H
