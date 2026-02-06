@@ -13,6 +13,14 @@ license = { text = "MIT" }
 requires-python = ">=3.9"
 keywords = ["asyncio", "http", "client", "http-client", "curl", "libcurl"]
 
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-asyncio",
+    "gunicorn",
+    "httpbin @ git+https://github.com/psf/httpbin.git",
+]
+
 [project.urls]
 Source = "https://github.com/AYMENJD/redc"
 Tracker = "https://github.com/AYMENJD/redc/issues"
@@ -24,6 +32,14 @@ wheel.py-api = "cp312"
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
 input = "redc/_version.py"
+
+[tool.scikit-build.cmake.define]
+CMAKE_BUILD_TYPE = "Release"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 
 [tool.cibuildwheel]
 build-verbosity = 1
