@@ -105,6 +105,13 @@ jobs:
           mkdir -p wheelhouse
           python -m cibuildwheel . --output-dir wheelhouse
 
+      - name: List Wheel Contents
+        run: |
+          for f in wheelhouse/*.whl; do
+            echo "Listing content of $f"
+            unzip -l "$f"
+          done
+
       - name: Tests
         run: |
           python -m pip install --find-links=wheelhouse redc[test]
@@ -155,6 +162,13 @@ jobs:
           mkdir -p wheelhouse
           python -m cibuildwheel . --output-dir wheelhouse
 
+      - name: List Wheel Contents
+        run: |
+          for f in wheelhouse/*.whl; do
+            echo "Listing content of $f"
+            unzip -l "$f"
+          done
+
       - name: Tests
         shell: bash
         run: |
@@ -200,6 +214,13 @@ jobs:
         run: |
           mkdir -p wheelhouse
           python -m cibuildwheel . --output-dir wheelhouse
+
+      - name: List Wheel Contents
+        run: |
+          for f in wheelhouse/*.whl; do
+            echo "Listing content of $f"
+            sudo unzip -l "$f"
+          done
 
       - name: Tests
         run: |
