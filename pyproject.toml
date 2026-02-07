@@ -14,11 +14,7 @@ requires-python = ">=3.9"
 keywords = ["asyncio", "http", "client", "http-client", "curl", "libcurl"]
 
 [project.optional-dependencies]
-test = [
-    "pytest-asyncio",
-    "waitress",
-    "httpbin @ git+https://github.com/psf/httpbin.git",
-]
+test = ["pytest-asyncio", "waitress", "httpbin"]
 
 [project.urls]
 Source = "https://github.com/AYMENJD/redc"
