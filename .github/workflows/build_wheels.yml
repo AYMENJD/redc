@@ -13,7 +13,7 @@ env:
 
 jobs:
   prepare:
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     outputs:
       psl: ${{ steps.vars.outputs.psl }}
       curl: ${{ steps.vars.outputs.curl }}
@@ -239,7 +239,7 @@ jobs:
 
   publish:
     needs: [prepare, build-linux, build-windows, build-macos]
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
