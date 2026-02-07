@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+JOBS=$(( $(nproc) - 1 ))
+[ "$JOBS" -lt 1 ] && JOBS=1
+
 # deps
 yum install wget gcc make perl-IPC-Cmd perl-Time-Piece -y
 
@@ -11,7 +14,7 @@ rm libunistring.tar.gz
 
 cd libunistring-1.4
 ./configure
-make -j
+make -j"$JOBS"
 make install
 cd .. && rm -rf libunistring-1.4
 
@@ -22,7 +25,7 @@ rm libidn2.tar.gz
 
 cd libidn2-2.3.8
 ./configure
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 cd .. && rm -rf libidn2-2.3.8
@@ -35,7 +38,7 @@ mv libpsl-$PSL_VERSION libpsl
 
 cd libpsl
 ./configure
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 cd .. && rm -rf libpsl
@@ -48,7 +51,7 @@ mv c-ares-$CARES_VERSION c-ares
 
 cd c-ares
 ./configure
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 cd .. && rm -rf c-ares
@@ -62,7 +65,7 @@ mv brotli-$BROTLI_VERSION brotli
 cd brotli/
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 cd ../.. && rm -rf brotli
@@ -76,7 +79,7 @@ mv zstd-$ZSTD_VERSION zstd
 cd zstd/
 mkdir build-cmake && cd build-cmake
 cmake -S ../build/cmake -B . -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release
-cmake --build . --config Release --target install -j
+cmake --build . --config Release --target install -j"$JOBS"
 ldconfig
 cd ../.. && rm -rf zstd
 
@@ -88,7 +91,7 @@ mv zlib-$ZLIB_VERSION zlib
 
 cd zlib/
 ./configure
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 cd .. && rm -rf zlib
@@ -101,7 +104,7 @@ mv openssl-openssl-$OPENSSL_VERSION openssl
 cd openssl
 
 ./Configure
-make -j
+make -j"$JOBS"
 make install_sw
 ldconfig
 cd .. && rm -rf openssl
@@ -120,7 +123,7 @@ mv ngtcp2-$NGTCP2_VERSION ngtcp2
 cd ngtcp2
 autoreconf -fi
 ./configure --enable-lib-only --with-openssl
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 cd .. && rm -rf ngtcp2
@@ -134,7 +137,7 @@ mv nghttp3-$NGHTTP3_VERSION nghttp3
 cd nghttp3
 autoreconf -fi
 ./configure --enable-lib-only
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 cd .. && rm -rf nghttp3
@@ -148,7 +151,7 @@ mv nghttp2-$NGHTTP2_VERSION nghttp2
 cd nghttp2
 autoreconf -i && automake && autoconf
 ./configure --enable-lib-only --with-openssl
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 cd .. && rm -rf nghttp2
@@ -207,7 +210,7 @@ cd curl
   --disable-manual \
   --disable-docs
 
-make -j
+make -j"$JOBS"
 make install
 ldconfig
 curl --version

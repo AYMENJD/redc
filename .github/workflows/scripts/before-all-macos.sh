@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+JOBS=$(( $(sysctl -n hw.ncpu) - 1 ))
+[ "$JOBS" -lt 1 ] && JOBS=1
+
 # deps
 brew install cmake autoconf automake libtool
 
@@ -15,7 +18,7 @@ rm libunistring.tar.gz
 
 cd libunistring-1.4
 ./configure --prefix=/usr/local
-make -j
+make -j"$JOBS"
 sudo make install
 cd .. && rm -rf libunistring-1.4
 
@@ -26,7 +29,7 @@ rm libidn2.tar.gz
 
 cd libidn2-2.3.8
 ./configure --prefix=/usr/local
-make -j
+make -j"$JOBS"
 sudo make install
 cd .. && rm -rf libidn2-2.3.8
 
@@ -38,7 +41,7 @@ mv libpsl-$PSL_VERSION libpsl
 
 cd libpsl
 ./configure --prefix=/usr/local
-make -j
+make -j"$JOBS"
 sudo make install
 cd .. && rm -rf libpsl
 
@@ -50,7 +53,7 @@ mv c-ares-$CARES_VERSION c-ares
 
 cd c-ares
 ./configure --prefix=/usr/local
-make -j
+make -j"$JOBS"
 sudo make install
 cd .. && rm -rf c-ares
 
@@ -63,7 +66,7 @@ mv brotli-$BROTLI_VERSION brotli
 cd brotli/
 mkdir build && cd build
 cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..
-make -j
+make -j"$JOBS"
 sudo make install
 cd ../.. && rm -rf brotli
 
@@ -76,7 +79,7 @@ mv zstd-$ZSTD_VERSION zstd
 cd zstd/
 mkdir build-cmake && cd build-cmake
 cmake -S ../build/cmake -B . -DZSTD_BUILD_PROGRAMS=OFF -DZSTD_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
-sudo cmake --build . --config Release --target install -j
+sudo cmake --build . --config Release --target install -j"$JOBS"
 cd ../.. && rm -rf zstd
 
 # zlib from source
@@ -87,7 +90,7 @@ mv zlib-$ZLIB_VERSION zlib
 
 cd zlib/
 ./configure --prefix=/usr/local
-make -j
+make -j"$JOBS"
 sudo make install
 cd .. && rm -rf zlib
 
@@ -100,7 +103,7 @@ cd openssl
 
 # Explicitly set prefix to /usr/local and libdir to lib
 ./Configure --prefix=/usr/local --libdir=lib
-make -j
+make -j"$JOBS"
 sudo make install_sw
 cd .. && rm -rf openssl
 
@@ -113,7 +116,7 @@ mv ngtcp2-$NGTCP2_VERSION ngtcp2
 cd ngtcp2
 autoreconf -fi
 ./configure --prefix=/usr/local --enable-lib-only --with-openssl
-make -j
+make -j"$JOBS"
 sudo make install
 cd .. && rm -rf ngtcp2
 
@@ -126,7 +129,7 @@ mv nghttp3-$NGHTTP3_VERSION nghttp3
 cd nghttp3
 autoreconf -fi
 ./configure --prefix=/usr/local --enable-lib-only
-make -j
+make -j"$JOBS"
 sudo make install
 cd .. && rm -rf nghttp3
 
@@ -139,7 +142,7 @@ mv nghttp2-$NGHTTP2_VERSION nghttp2
 cd nghttp2
 autoreconf -i && automake && autoconf
 ./configure --prefix=/usr/local --enable-lib-only --with-openssl
-make -j
+make -j"$JOBS"
 sudo make install
 cd .. && rm -rf nghttp2
 
@@ -197,7 +200,7 @@ cd curl
   --disable-manual \
   --disable-docs
 
-make -j
+make -j"$JOBS"
 sudo make install
 curl --version
 cd ..
