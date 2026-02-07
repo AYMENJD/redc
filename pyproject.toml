@@ -15,9 +15,8 @@ keywords = ["asyncio", "http", "client", "http-client", "curl", "libcurl"]
 
 [project.optional-dependencies]
 test = [
-    "pytest",
     "pytest-asyncio",
-    "gunicorn",
+    "waitress",
     "httpbin @ git+https://github.com/psf/httpbin.git",
 ]
 

@@ -34,13 +34,8 @@ def httpbin_server():
     cmd = [
         sys.executable,
         "-m",
-        "gunicorn",
-        "--bind",
-        f"{host}:{port}",
-        "--workers",
-        "2",
-        "--log-level",
-        "warning",
+        "waitress",
+        f"--listen={host}:{port}",
         "httpbin.core:app",
     ]
 
