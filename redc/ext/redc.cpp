@@ -954,6 +954,8 @@ int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
   Py_VISIT(me->asyncio_.ptr());
   Py_VISIT(me->loop_.ptr());
   Py_VISIT(me->loop_call_soon_threadsafe_.ptr());
+  Py_VISIT(me->loop_call_soon_.ptr());
+  Py_VISIT(me->loop_create_future_.ptr());
   Py_VISIT(me->socket_event_callback_.ptr());
   Py_VISIT(me->timer_event_callback_.ptr());
   Py_VISIT(me->timer_handle_.ptr());
@@ -971,6 +973,8 @@ int redc_tp_clear(PyObject *self) {
   c->asyncio_ = {};
   c->loop_ = {};
   c->loop_call_soon_threadsafe_ = {};
+  c->loop_call_soon_ = {};
+  c->loop_create_future_ = {};
   c->socket_event_callback_ = {};
   c->timer_event_callback_ = {};
   c->timer_handle_ = {};
