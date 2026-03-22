@@ -841,7 +841,7 @@ size_t RedC::read_callback(char *buffer, size_t size, size_t nitems,
     return 0; // abort transfer
   }
 
-  auto memview = nb::memoryview::from_memory(buffer, size * nitems);
+  auto memview = mv_from_buffer(buffer, size * nitems);
   auto result = clientp->body_stream.attr("readinto")(memview);
   return nb::cast<curl_off_t>(result);
 }
@@ -851,7 +851,7 @@ size_t RedC::mime_read_callback(char *buffer, size_t size, size_t nitems,
   py_object *stream = static_cast<py_object *>(arg);
   acq_gil gil;
   try {
-    auto memview = nb::memoryview::from_memory(buffer, size * nitems);
+    auto memview = mv_from_buffer(buffer, size * nitems);
     auto result = stream->attr("readinto")(memview);
     return nb::cast<size_t>(result);
   } catch (...) {
