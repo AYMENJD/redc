@@ -70,7 +70,7 @@ jobs:
       matrix:
         include:
           - name: linux-x64
-            os: tenki-standard-autoscale
+            os: ubuntu-latest
           - name: linux-arm
             os: ubuntu-24.04-arm
 
@@ -186,7 +186,7 @@ jobs:
 
   build-macos:
     needs: prepare
-    runs-on: tenki-macos-latest-small
+    runs-on: macos-latest
 
     env:
       CIBW_ENVIRONMENT: >
