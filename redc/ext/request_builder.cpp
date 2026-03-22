@@ -298,6 +298,7 @@ void RequestBuilder::set_payload(CURL *easy, Request *req,
 
   if (!data.is_none() && nb::hasattr(data, "readinto")) {
     req->body_stream = data;
+    req->body_stream_readinto = data.attr("readinto");
     curl_easy_setopt(easy, CURLOPT_UPLOAD, 1L);
     curl_easy_setopt(easy, CURLOPT_READFUNCTION, &RedC::read_callback);
     curl_easy_setopt(easy, CURLOPT_READDATA, req);
@@ -375,8 +376,10 @@ void RequestBuilder::handle_mime_content(Request *req, curl_mimepart *part,
     curl_mime_data(part, s.c_str(), CURL_ZERO_TERMINATED);
 
   } else if (nb::hasattr(content, "readinto")) {
-    req->mime_streams.push_back(nb::borrow<py_object>(content));
-    py_object *stream = &req->mime_streams.back();
+    req->mime_streams.emplace_back(
+        MimeStream{nb::borrow<py_object>(content), content.attr("readinto")});
+
+    MimeStream *stream = &req->mime_streams.back();
 
     curl_mime_data_cb(part, -1, RedC::mime_read_callback, nullptr, nullptr,
                       stream);

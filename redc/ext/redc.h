@@ -44,6 +44,11 @@ constexpr bool isNullOrEmpty(const char *str) { return !str || !*str; }
 
 class RequestBuilder;
 
+struct MimeStream {
+  py_object stream;
+  py_object readinto;
+};
+
 struct Request {
   Request() {
     headers.reserve(1024);
@@ -59,14 +64,17 @@ struct Request {
   ~Request() = default;
 
   py_object future;
+  py_object future_set_result;
+  py_object future_set_exception;
   py_object loop;
   py_object stream_callback{nb::none()};
   py_object progress_callback{nb::none()};
 
   py_object body_stream{nb::none()};
+  py_object body_stream_readinto;
   py_bytes raw_data;
 
-  std::list<py_object> mime_streams;
+  std::list<MimeStream> mime_streams;
   std::list<string> mime_data_store;
 
   bool has_stream_callback{false};
@@ -191,7 +199,9 @@ private:
 
   py_object asyncio_;
   py_object loop_;
-  py_object call_soon_threadsafe_;
+  py_object loop_call_soon_threadsafe_;
+  py_object loop_call_soon_;
+  py_object loop_create_future_;
   py_object loop_add_reader_;
   py_object loop_remove_reader_;
   py_object loop_add_writer_;

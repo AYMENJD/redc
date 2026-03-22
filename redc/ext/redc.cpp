@@ -56,7 +56,9 @@ RedC::RedC(const long &read_buffer_size, const bool &persist_cookies,
     acq_gil gil;
     asyncio_ = nb::module_::import_("asyncio");
     loop_ = asyncio_.attr("get_event_loop")();
-    call_soon_threadsafe_ = loop_.attr("call_soon_threadsafe");
+    loop_call_soon_threadsafe_ = loop_.attr("call_soon_threadsafe");
+    loop_call_soon_ = loop_.attr("call_soon");
+    loop_create_future_ = loop_.attr("create_future");
 
     if (!threaded_mode_) {
       loop_add_reader_ = loop_.attr("add_reader");
@@ -412,7 +414,7 @@ void RedC::on_socket_event(int fd, int action) {
 
   if (!process_scheduled_) {
     process_scheduled_ = true;
-    loop_.attr("call_soon")(process_events_callback_);
+    loop_call_soon_(process_events_callback_);
   }
 }
 
@@ -540,7 +542,7 @@ static py_tuple make_result_tuple(const Result &r) {
 void RedC::complete_request_future(Result &req) {
   try {
     auto result = make_result_tuple(req);
-    req.request->future.attr("set_result")(std::move(result));
+    req.request->future_set_result(std::move(result));
   } catch (const std::exception &e) {
   }
 }
@@ -639,10 +641,12 @@ py_object RedC::request(const char *method, const char *url,
     RequestBuilder::set_auth(easy, auth);
     RequestBuilder::set_params(easy, url, params);
 
-    py_object future{loop_.attr("create_future")()};
+    py_object future{loop_create_future_()};
 
     auto req = std::make_unique<Request>();
     req->future = future;
+    req->future_set_result = future.attr("set_result");
+    req->future_set_exception = future.attr("set_exception");
     req->loop = loop_;
     req->stream_callback = stream_callback;
     req->progress_callback = progress_callback;
@@ -706,11 +710,11 @@ void RedC::worker_loop() {
       const CURLMcode mcurl_code = curl_multi_add_handle(multi_handle_, easy);
       if (mcurl_code != CURLM_OK) {
         acq_gil gil;
-        call_soon_threadsafe_(nb::cpp_function(
+        loop_call_soon_threadsafe_(nb::cpp_function(
             [request = std::move(pending.request), mcurl_code]() {
               const char *err = curl_multi_strerror(mcurl_code);
 
-              request->future.attr("set_exception")(std::runtime_error(
+              request->future_set_exception(std::runtime_error(
                   "CURLM " + std::to_string((int)mcurl_code) + ": " +
                   (err ? err : "unknown error")));
             }));
@@ -766,7 +770,7 @@ void RedC::worker_loop() {
 
     if (had_completed) {
       acq_gil gil;
-      call_soon_threadsafe_(
+      loop_call_soon_threadsafe_(
           nb::cpp_function([this, batch = std::make_unique<std::vector<Result>>(
                                       std::move(result_batch))]() {
             for (auto &req : *batch) {
@@ -803,7 +807,7 @@ void RedC::worker_loop() {
 
   acq_gil gil;
   if (had_completed_final) {
-    call_soon_threadsafe_(
+    loop_call_soon_threadsafe_(
         nb::cpp_function([this, batch = std::make_unique<std::vector<Result>>(
                                     std::move(result_batch))]() {
           for (auto &req : *batch) {
@@ -818,7 +822,7 @@ void RedC::worker_loop() {
     curl_easy_cleanup(easy);
 
     try {
-      call_soon_threadsafe_(
+      loop_call_soon_threadsafe_(
           nb::cpp_function([future = std::move(request->future)]() {
             future.attr("cancel")();
           }));
@@ -842,17 +846,18 @@ size_t RedC::read_callback(char *buffer, size_t size, size_t nitems,
   }
 
   auto memview = mv_from_buffer(buffer, size * nitems);
-  auto result = clientp->body_stream.attr("readinto")(memview);
+  auto result = clientp->body_stream_readinto(memview);
   return nb::cast<curl_off_t>(result);
 }
 
 size_t RedC::mime_read_callback(char *buffer, size_t size, size_t nitems,
                                 void *arg) {
-  py_object *stream = static_cast<py_object *>(arg);
+  auto *stream = static_cast<MimeStream *>(arg);
+
   acq_gil gil;
   try {
     auto memview = mv_from_buffer(buffer, size * nitems);
-    auto result = stream->attr("readinto")(memview);
+    auto result = stream->readinto(memview);
     return nb::cast<size_t>(result);
   } catch (...) {
     return CURL_READFUNC_ABORT;
@@ -948,7 +953,7 @@ int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
   RedC *me = nb::inst_ptr<RedC>(self);
   Py_VISIT(me->asyncio_.ptr());
   Py_VISIT(me->loop_.ptr());
-  Py_VISIT(me->call_soon_threadsafe_.ptr());
+  Py_VISIT(me->loop_call_soon_threadsafe_.ptr());
   Py_VISIT(me->socket_event_callback_.ptr());
   Py_VISIT(me->timer_event_callback_.ptr());
   Py_VISIT(me->timer_handle_.ptr());
@@ -965,7 +970,7 @@ int redc_tp_clear(PyObject *self) {
   RedC *c = nb::inst_ptr<RedC>(self);
   c->asyncio_ = {};
   c->loop_ = {};
-  c->call_soon_threadsafe_ = {};
+  c->loop_call_soon_threadsafe_ = {};
   c->socket_event_callback_ = {};
   c->timer_event_callback_ = {};
   c->timer_handle_ = {};
