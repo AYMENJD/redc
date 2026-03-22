@@ -27,7 +27,7 @@ jobs:
       cares: ${{ steps.vars.outputs.cares }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up variables
         id: vars
@@ -90,7 +90,7 @@ jobs:
         CARES_VERSION=${{ needs.prepare.outputs.cares }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -143,7 +143,7 @@ jobs:
         CARES_VERSION=${{ needs.prepare.outputs.cares }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -203,7 +203,7 @@ jobs:
         CARES_VERSION=${{ needs.prepare.outputs.cares }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -245,7 +245,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Download all wheels
         uses: actions/download-artifact@v4
