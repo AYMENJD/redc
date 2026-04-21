@@ -5,19 +5,19 @@
   <br/><br/>
 
   <a href="https://pypi.org/project/RedC">
-    <img src="https://img.shields.io/pypi/v/redc?style=flat&logo=curl&logoColor=red&color=red" height="20" alt="PyPI version">
+    <img src="https://img.shields.io/pypi/v/redc?style=flat&logo=curl&logoColor=red&color=red" alt="PyPI version">
   </a>
   <a href="https://curl.se/ch/8.19.0.html">
-    <img src="https://img.shields.io/badge/Curl-v8.19.0-red?logo=curl" height="20" alt="Curl version">
+    <img src="https://img.shields.io/badge/Curl-v8.19.0-red?logo=curl" alt="Curl version">
   </a>
   <a href="https://github.com/AYMENJD/redc/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/AYMENJD/redc/build_wheels.yml?label=CI+wheels&logo=github" height="20" alt="Build status">
+    <img src="https://img.shields.io/github/actions/workflow/status/AYMENJD/redc/build_wheels.yml?label=CI+wheels&logo=github" alt="Build status">
   </a>
   <a href="https://www.python.org">
-    <img src="https://img.shields.io/pypi/pyversions/redc?style=flat&logo=python" height="20" alt="Python versions" />
+    <img src="https://img.shields.io/pypi/pyversions/redc?style=flat&logo=python" alt="Python versions" />
   </a>
   <a href="https://pypi.org/project/RedC">
-    <img src="https://img.shields.io/pypi/dm/RedC?style=flat&logo=pypi" height="20" alt="Downloads"/>
+    <img src="https://img.shields.io/pypi/dm/RedC?style=flat&logo=pypi" alt="Downloads"/>
   </a>
 </p>
 
