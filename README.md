@@ -1,12 +1,27 @@
-<div align="center">
-  <img src="https://raw.githubusercontent.com/AYMENJD/redc/refs/heads/main/assets/images/redc-logo.png">
-</div>
+<p align="center">
+  <img src="https://raw.githubusercontent.com/AYMENJD/redc/refs/heads/main/assets/images/redc-logo.svg" width="500" alt="RedC logo" />
+  <br/><br/>
+  Async HTTP client for Python with <strong>native libcurl</strong> performance.
+  <br/><br/>
 
-[![Version](https://img.shields.io/pypi/v/redc?style=flat&logo=curl&logoColor=red&color=red)](https://pypi.org/project/RedC) [![CURL version](https://img.shields.io/badge/Curl-v8.19.0-red?logo=curl)](https://curl.se/ch/8.19.0.html) [![Downloads](https://static.pepy.tech/personalized-badge/redc?period=month&units=none&left_color=grey&right_color=brightgreen&left_text=Downloads)](https://pepy.tech/project/redc)
+  <a href="https://pypi.org/project/RedC">
+    <img src="https://img.shields.io/pypi/v/redc?style=flat&logo=curl&logoColor=red&color=red" height="20" alt="PyPI version">
+  </a>
+  <a href="https://curl.se/ch/8.19.0.html">
+    <img src="https://img.shields.io/badge/Curl-v8.19.0-red?logo=curl" height="20" alt="Curl version">
+  </a>
+  <a href="https://github.com/AYMENJD/redc/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/AYMENJD/redc/build_wheels.yml?label=CI+wheels&logo=github" height="20" alt="Build status">
+  </a>
+  <a href="https://www.python.org">
+    <img src="https://img.shields.io/pypi/pyversions/redc?style=flat&logo=python" height="20" alt="Python versions" />
+  </a>
+  <a href="https://pypi.org/project/RedC">
+    <img src="https://img.shields.io/pypi/dm/RedC?style=flat&logo=pypi" height="20" alt="Downloads"/>
+  </a>
+</p>
 
-**RedC** is a **high-performance**, asynchronous **HTTP** client library for **Python**, built on top of the powerful **curl** library. It provides a simple and intuitive interface for making HTTP requests and handling responses
-
-## Features
+### Features
 
 - **Protocols**: Supports **HTTP/1.1**, **HTTP/2**, and **HTTP/3**
 - **curl-powered**: Built on top of **libcurl** for **performance and reliability**
