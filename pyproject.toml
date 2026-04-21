@@ -60,8 +60,7 @@ asyncio_default_test_loop_scope = "session"
 
 [tool.cibuildwheel]
 build-verbosity = 1
-build = "cp3?-*"
-enable = ["cpython-freethreading"]
+build-frontend = "build[uv]"
 skip = "*musllinux*"
 archs = ["native"]
 

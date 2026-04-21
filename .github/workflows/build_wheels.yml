@@ -97,6 +97,9 @@ jobs:
         with:
           python-version: ${{ env.USING_PYTHON_VERSION }}
 
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
+
       - name: Install cibuildwheel
         run: python -m pip install --upgrade pip cibuildwheel
 
@@ -149,6 +152,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.USING_PYTHON_VERSION }}
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
       - name: Install cibuildwheel
         shell: bash
@@ -209,6 +215,9 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: ${{ env.USING_PYTHON_VERSION }}
+
+      - name: Install the latest version of uv
+        uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b # v8.1.0
 
       - name: Install cibuildwheel
         run: python -m pip install --upgrade pip cibuildwheel
