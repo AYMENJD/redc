@@ -5,20 +5,27 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "redc"
 dynamic = ["version"]
-description = "RedC is a high-performance, asynchronous HTTP client library for Python, built on top of the powerful curl library"
+description = "Async HTTP client for Python with native libcurl performance."
 readme = "README.md"
 dependencies = ["trustifi"]
-authors = [{ name = "AYMEN Mohammed", email = "let.me.code.safe@gmail.com" }]
+authors = [{ name = "AYMEN A", email = "let.me.code.safe@gmail.com" }]
 license = "MIT"
 license-files = ["LICENSE"]
-requires-python = ">=3.9"
-keywords = ["asyncio", "http", "client", "http-client", "curl", "libcurl"]
+requires-python = ">=3.10"
+keywords = [
+    "asyncio",
+    "http",
+    "client",
+    "http-client",
+    "curl",
+    "libcurl",
+    "native",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -38,7 +45,6 @@ Tracker = "https://github.com/AYMENJD/redc/issues"
 
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"
-wheel.py-api = "cp312"
 
 [tool.scikit-build.metadata.version]
 provider = "scikit_build_core.metadata.regex"
@@ -54,7 +60,7 @@ asyncio_default_test_loop_scope = "session"
 
 [tool.cibuildwheel]
 build-verbosity = 1
-build = "cp39* cp310* cp311* cp312* cp313*"
+build = "cp3?-*"
 enable = ["cpython-freethreading"]
 skip = "*musllinux*"
 archs = ["native"]

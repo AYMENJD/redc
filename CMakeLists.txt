@@ -35,7 +35,7 @@ else()
     set(DEV_MODULE Development.Module)
 endif()
 
-find_package(Python COMPONENTS Interpreter ${DEV_MODULE} REQUIRED OPTIONAL_COMPONENTS Development.SABIModule)
+find_package(Python COMPONENTS Interpreter ${DEV_MODULE} REQUIRED OPTIONAL_COMPONENTS)
 find_package(nanobind CONFIG REQUIRED)
 
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -45,7 +45,6 @@ endif()
 
 nanobind_add_module(
   redc_ext
-  STABLE_ABI
   FREE_THREADED
   LTO
   redc/ext/redc.cpp
