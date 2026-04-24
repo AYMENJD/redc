@@ -35,7 +35,7 @@ else()
     set(DEV_MODULE Development.Module)
 endif()
 
-find_package(Python COMPONENTS Interpreter ${DEV_MODULE} REQUIRED OPTIONAL_COMPONENTS)
+find_package(Python COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
 find_package(nanobind CONFIG REQUIRED)
 
 if (NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
@@ -50,7 +50,16 @@ nanobind_add_module(
   redc/ext/redc.cpp
   redc/ext/request_builder.cpp
 )
+nanobind_add_module(
+  redc_ext_url
+  FREE_THREADED
+  LTO
+  redc/ext/url.cpp
+)
 
 target_link_libraries(redc_ext PRIVATE CURL::libcurl)
+target_link_libraries(redc_ext_url PRIVATE CURL::libcurl)
+
 
 install(TARGETS redc_ext LIBRARY DESTINATION redc/)
+install(TARGETS redc_ext_url LIBRARY DESTINATION redc/)

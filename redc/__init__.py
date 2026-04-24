@@ -3,6 +3,7 @@ from ._version import CURL_VERSION, __copyright__, __license__, __version__
 from .callbacks import ProgressCallback, StreamCallback
 from .client import Client
 from .codes import HTTPStatus
+from .redc_ext_url import CurlURL
 from .response import Response
 
 __all__ = [
@@ -12,6 +13,7 @@ __all__ = [
     "StreamCallback",
     "Client",
     "HTTPStatus",
+    "CurlURL",
     "Response",
     "CURL_VERSION",
     "__version__",
