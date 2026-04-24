@@ -63,6 +63,35 @@ async def main():
 asyncio.run(main())
 ```
 
+## URL Utilities
+
+RedC includes a high-performance URL parser powered by libcurl.
+
+```python
+from redc import CurlURL
+
+u = CurlURL("https://user:pass@example.com:8080/path?q=1#frag")
+
+print(u.host)   # example.com
+print(u.port)   # 8080
+print(u.path)   # /path
+
+u.query = None
+u["port"] = 443
+
+print(str(u))
+# https://user:pass@example.com:443/path#frag
+```
+
+Validate URLs:
+
+```python
+from redc import CurlURL
+
+print(CurlURL.is_valid_url("https://example.com"))  # True
+print(CurlURL.is_valid_url("::::invalid::::"))      # False
+```
+
 ## License
 
 MIT [LICENSE](https://github.com/AYMENJD/redc/blob/main/LICENSE)
