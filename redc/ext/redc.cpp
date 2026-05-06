@@ -989,7 +989,7 @@ int redc_tp_clear(PyObject *self) {
 
 PyType_Slot slots[] = {{Py_tp_traverse, (void *)redc_tp_traverse},
                        {Py_tp_clear, (void *)redc_tp_clear},
-                       {0, 0}};
+                       {0, nullptr}};
 
 NB_MODULE(redc_ext, m) {
   nb::class_<RedC>(m, "RedC", nb::type_slots(slots))
