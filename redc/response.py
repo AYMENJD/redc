@@ -157,6 +157,37 @@ class Response:
         )
 
     @property
+    def cookies(self) -> dict[str, str]:
+        """Returns cookies set by the server (from ``Set-Cookie`` headers)
+
+        Collects cookies from all responses in the redirect chain.
+        If multiple ``Set-Cookie`` headers set the same cookie name, the last value wins.
+
+        Returns:
+            ``dict[str, str]``
+        """
+        cookies = {}
+
+        for entry in self.history:
+            if not entry.headers:
+                continue
+
+            raw = entry.headers.get("set-cookie")
+            if raw is None:
+                continue
+
+            values = raw if isinstance(raw, list) else [raw]
+
+            for header in values:
+                if "=" in header:
+                    name = header.split("=", 1)[0].strip()
+                    value = header.split(";", 1)[0].split("=", 1)[1].strip()
+                    if name:
+                        cookies[name] = value
+
+        return cookies
+
+    @property
     def is_redirect(self) -> bool:
         """True if this response is a redirect"""
 
