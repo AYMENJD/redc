@@ -6,6 +6,7 @@
 #include <cstring>
 #include <list>
 #include <mutex>
+#include <shared_mutex>
 #include <thread>
 #include <vector>
 
@@ -87,7 +88,11 @@ struct Request {
   string post_data_buffer;
 
   std::vector<char> response;
+  std::vector<char> verbose_output;
   char errbuf[CURL_ERROR_SIZE]{0};
+
+  CURL *easy_handle{nullptr};
+  bool content_length_reserved{false};
 };
 
 struct PendingRequest {
@@ -144,7 +149,8 @@ public:
                     const py_object &allow_redirects, const char *proxy_url,
                     const py_object &auth, const bool &verify, const char *cert,
                     const py_object &stream_callback,
-                    const py_object &progress_callback, const bool &verbose);
+                    const py_object &progress_callback, const bool &verbose,
+                    const bool &keep_alive);
 
   friend class RequestBuilder;
   friend int redc_tp_traverse(PyObject *, visitproc, void *);
@@ -166,6 +172,8 @@ private:
   static size_t progress_callback(Request *clientp, curl_off_t dltotal,
                                   curl_off_t dlnow, curl_off_t ultotal,
                                   curl_off_t ulnow);
+  static int debug_callback(CURL *handle, curl_infotype type, char *data,
+                            size_t size, void *userp);
 
   static void share_lock_cb(CURL *handle, curl_lock_data data,
                             curl_lock_access access, RedC *self);
@@ -227,7 +235,7 @@ private:
       active_requests_;
   std::vector<Result> completed_batch_;
   std::vector<std::pair<int, int>> pending_socket_events_;
-  std::unordered_map<curl_socket_t, int> pending_socket_changes_;
+  ankerl::unordered_dense::map<curl_socket_t, int> pending_socket_changes_;
 };
 
 #endif // REDC_H

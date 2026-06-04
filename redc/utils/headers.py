@@ -123,6 +123,45 @@ class Headers(dict):
 
         return history
 
+    @staticmethod
+    def parse_last_header(raw_headers: bytes) -> "History":
+        text = raw_headers.decode("iso-8859-1")
+        blocks = text.split("\r\n\r\n")
+
+        block = None
+        for b in reversed(blocks):
+            if b.strip():
+                block = b
+                break
+
+        if block is None:
+            return History(url=None, http_version="", headers=Headers(), status_code=0)
+
+        lines = block.splitlines()
+        if not lines:
+            return History(url=None, http_version="", headers=Headers(), status_code=0)
+
+        status_line = lines[0]
+        parts = status_line.split(" ", 2)
+        http_version = parts[0].replace("HTTP/", "") if len(parts) >= 1 else ""
+        try:
+            status_code = int(parts[1]) if len(parts) >= 2 else 0
+        except ValueError:
+            status_code = 0
+
+        headers = Headers()
+        for line in lines[1:]:
+            if ":" in line:
+                k, v = line.split(":", 1)
+                headers[k] = v.strip()
+
+        return History(
+            url=headers.get("location"),
+            http_version=http_version,
+            headers=headers,
+            status_code=status_code,
+        )
+
 
 class History:
     __slots__ = ("url", "http_version", "headers", "status_code")

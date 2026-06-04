@@ -3,6 +3,7 @@
 #include "utils/curl_utils.h"
 #include "utils/memoryview.h"
 #include "utils/py_utils.h"
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
@@ -236,31 +237,53 @@ py_dict RedC::parse_cookie_string(const char *cookie_line) {
   // 5: Name (string)
   // 6: Value (string)
 
-  std::vector<string> parts;
-  std::stringstream ss(cookie_line);
-  string item;
-
-  while (std::getline(ss, item, '\t')) {
-    parts.push_back(item);
+  py_dict cookie;
+  if (!cookie_line || !*cookie_line) {
+    return cookie;
   }
 
-  py_dict cookie;
-  if (parts.size() >= 6) {
-    cookie["domain"] = parts[0];
-    cookie["include_subdomains"] = (parts[1] == "TRUE");
-    cookie["path"] = parts[2];
-    cookie["secure"] = (parts[3] == "TRUE");
+  const char *fields[7] = {};
+  int field_count = 0;
+  const char *p = cookie_line;
 
+  while (*p && field_count < 7) {
+    fields[field_count++] = p;
+    const char *tab =
+        reinterpret_cast<const char *>(std::memchr(p, '\t', std::strlen(p)));
+    if (!tab)
+      break;
+    p = tab + 1;
+  }
+
+  if (field_count >= 6) {
+    const char *dom_start = fields[0];
+    const char *dom_end = (field_count > 0) ? fields[1] - 1 : dom_start;
+    cookie["domain"] = string(dom_start, dom_end - dom_start);
+
+    cookie["include_subdomains"] = (fields[1][0] == 'T');
+
+    const char *path_start = fields[2];
+    const char *path_end = fields[3] - 1;
+    cookie["path"] = string(path_start, path_end - path_start);
+
+    cookie["secure"] = (fields[3][0] == 'T');
+
+    const char *exp_start = fields[4];
+    const char *exp_end = (field_count > 5) ? fields[5] - 1 : exp_start;
     try {
-      cookie["expires"] = std::stoll(parts[4]);
+      cookie["expires"] = std::stoll(string(exp_start, exp_end - exp_start));
     } catch (...) {
       cookie["expires"] = 0;
     }
 
-    cookie["name"] = parts[5];
+    const char *name_start = fields[5];
+    const char *name_end = (field_count > 6)
+                               ? fields[6] - 1
+                               : name_start + std::strlen(name_start);
+    cookie["name"] = string(name_start, name_end - name_start);
 
-    if (parts.size() > 6) {
-      cookie["value"] = parts[6];
+    if (field_count > 6) {
+      cookie["value"] = string(fields[6]);
     } else {
       cookie["value"] = "";
     }
@@ -531,12 +554,15 @@ static py_tuple make_result_tuple(const Result &r) {
               : py_str(r.request->errbuf[0] ? r.request->errbuf
                                             : curl_easy_strerror(r.curl_code));
 
+  const auto verbose_out = py_bytes(r.request->verbose_output.data(),
+                                    r.request->verbose_output.size());
+
   return nb::make_tuple(status_code, headers, body, r.url,
                         get_http_version_from_bit(r.http_version),
                         r.redirect_count, r.dns_time, r.connect_time,
                         r.tls_time, r.download_size, r.download_speed,
                         r.upload_size, r.upload_speed, r.elapsed,
-                        static_cast<int>(r.curl_code), curl_error);
+                        static_cast<int>(r.curl_code), curl_error, verbose_out);
 }
 
 void RedC::complete_request_future(Result &req) {
@@ -556,8 +582,8 @@ py_object RedC::request(const char *method, const char *url,
                         const py_object &allow_redirects, const char *proxy_url,
                         const py_object &auth, const bool &verify,
                         const char *cert, const py_object &stream_callback,
-                        const py_object &progress_callback,
-                        const bool &verbose) {
+                        const py_object &progress_callback, const bool &verbose,
+                        const bool &keep_alive) {
   CHECK_RUNNING();
 
   if (isNullOrEmpty(method) || isNullOrEmpty(url)) {
@@ -576,8 +602,13 @@ py_object RedC::request(const char *method, const char *url,
     curl_easy_setopt(easy, CURLOPT_HTTP_VERSION,
                      get_http_version_bit(http_version));
 
-    curl_easy_setopt(easy, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(easy, CURLOPT_TCP_KEEPINTVL, 30L);
+    if (keep_alive) {
+      curl_easy_setopt(easy, CURLOPT_TCP_KEEPALIVE, 1L);
+      curl_easy_setopt(easy, CURLOPT_TCP_KEEPINTVL, 30L);
+    } else {
+      curl_easy_setopt(easy, CURLOPT_FORBID_REUSE, 1L);
+      curl_easy_setopt(easy, CURLOPT_TCP_KEEPALIVE, 0L);
+    }
     curl_easy_setopt(easy, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(easy, CURLOPT_PIPEWAIT, 1L);
     curl_easy_setopt(easy, CURLOPT_ACCEPT_ENCODING, "");
@@ -589,10 +620,6 @@ py_object RedC::request(const char *method, const char *url,
 
     if (session_enabled_) {
       curl_easy_setopt(easy, CURLOPT_COOKIEFILE, "");
-    }
-
-    if (verbose) {
-      curl_easy_setopt(easy, CURLOPT_VERBOSE, 1L);
     }
 
     if (connect_timeout_ms > 0) {
@@ -644,6 +671,7 @@ py_object RedC::request(const char *method, const char *url,
     py_object future{loop_create_future_()};
 
     auto req = std::make_unique<Request>();
+    req->easy_handle = easy;
     req->future = future;
     req->future_set_result = future.attr("set_result");
     req->future_set_exception = future.attr("set_exception");
@@ -654,6 +682,12 @@ py_object RedC::request(const char *method, const char *url,
     req->has_progress_callback = !progress_callback.is_none() && !is_nobody;
 
     curl_easy_setopt(easy, CURLOPT_ERRORBUFFER, req->errbuf);
+
+    if (verbose) {
+      curl_easy_setopt(easy, CURLOPT_VERBOSE, 1L);
+      curl_easy_setopt(easy, CURLOPT_DEBUGFUNCTION, &RedC::debug_callback);
+      curl_easy_setopt(easy, CURLOPT_DEBUGDATA, req.get());
+    }
 
     RequestBuilder::set_headers(easy, headers, req->request_headers);
     RequestBuilder::set_payload(easy, req.get(), raw_data, data, files);
@@ -887,6 +921,15 @@ size_t RedC::progress_callback(Request *clientp, curl_off_t dltotal,
   return 0;
 }
 
+int RedC::debug_callback(CURL *handle, curl_infotype type, char *data,
+                         size_t size, void *userp) {
+  Request *req = static_cast<Request *>(userp);
+  if (type == CURLINFO_TEXT) {
+    req->verbose_output.insert(req->verbose_output.end(), data, data + size);
+  }
+  return 0;
+}
+
 size_t RedC::write_callback(char *data, size_t size, size_t nmemb,
                             Request *clientp) {
   size_t total_size = size * nmemb;
@@ -904,6 +947,16 @@ size_t RedC::write_callback(char *data, size_t size, size_t nmemb,
                 << MAX_RESPONSE_SIZE << " bytes. "
                 << "Use a stream callback instead" << std::endl;
       return 0; // abort transfer
+    }
+
+    if (!clientp->content_length_reserved && clientp->easy_handle) {
+      clientp->content_length_reserved = true;
+      curl_off_t cl = -1;
+      curl_easy_getinfo(clientp->easy_handle,
+                        CURLINFO_CONTENT_LENGTH_DOWNLOAD_T, &cl);
+      if (cl > 0 && static_cast<size_t>(cl) <= MAX_RESPONSE_SIZE) {
+        clientp->response.reserve(static_cast<size_t>(cl));
+      }
     }
 
     clientp->response.insert(clientp->response.end(), data, data + total_size);
@@ -1010,7 +1063,8 @@ NB_MODULE(redc_ext, m) {
            arg("proxy_url") = "", arg("auth") = nb::none(),
            arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),
-           arg("progress_callback") = nb::none(), arg("verbose") = false)
+           arg("progress_callback") = nb::none(), arg("verbose") = false,
+           arg("keep_alive") = true)
       .def("get_cookies", &RedC::get_cookies, arg("netscape") = false)
       .def("clear_cookies", &RedC::clear_cookies)
       .def("curl_version", &RedC::redc_curl_version,

@@ -34,6 +34,7 @@ class Client:
         force_verbose: bool = None,
         raise_for_status: bool = False,
         json_encoder: Callable[..., bytes] = json_dumps,
+        keep_alive: bool = True,
     ):
         """
         Initialize the RedC client
@@ -124,6 +125,12 @@ class Client:
 
             json_encoder (``Callable``, *optional*):
                 A callable for encoding JSON data. Default is :class:`redc.utils.json_dumps`
+
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``True``, connections are reused for subsequent requests (default HTTP behavior).
+                When ``False``, the connection is closed immediately after the transfer.
+                Default is ``True``
         """
 
         self.allowed_http_versions = ("auto", "1", "1.1", "2", "3")
@@ -143,6 +150,7 @@ class Client:
             "force_verbose must be bool or None"
         )
         assert isinstance(raise_for_status, bool), "raise_for_status must be bool"
+        assert isinstance(keep_alive, bool), "keep_alive must be bool"
 
         assert read_buffer_size >= 1024, (
             "read_buffer_size must be bigger than 1024 bytes"
@@ -170,15 +178,13 @@ class Client:
 
         self.force_verbose = force_verbose
         self.raise_for_status = raise_for_status
+        self.__keep_alive = keep_alive
 
         self.__base_url = (
             parse_base_url(base_url) if isinstance(base_url, str) else None
         )
 
         self.__default_headers = Headers(headers if isinstance(headers, dict) else {})
-        self.__default_headers_lc = {
-            k.lower(): v for k, v in self.__default_headers.items()
-        }
 
         self.__default_http_version = http_version
         self.__allowed_http_versions_set = set(self.allowed_http_versions)
@@ -268,6 +274,7 @@ class Client:
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
+        keep_alive: bool = None,
     ):
         """
         Make an HTTP request with the specified method and parameters
@@ -350,6 +357,10 @@ class Client:
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``None``, uses the client-level default. Default is ``None``
+
         Returns:
             :class:`redc.Response`
         """
@@ -413,6 +424,7 @@ class Client:
                 stream_callback=stream_callback,
                 progress_callback=progress_callback,
                 verbose=self.force_verbose or verbose,
+                keep_alive=keep_alive if keep_alive is not None else self.__keep_alive,
             ),
             raise_for_status=self.raise_for_status,
         )
@@ -433,6 +445,7 @@ class Client:
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
+        keep_alive: bool = None,
     ):
         """
         Make a GET request
@@ -508,6 +521,7 @@ class Client:
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
+            keep_alive=keep_alive,
         )
 
     async def head(
@@ -524,6 +538,7 @@ class Client:
         auth: Union[tuple, str] = None,
         cert: str = None,
         verbose: bool = False,
+        keep_alive: bool = None,
     ):
         """
         Make a HEAD request
@@ -591,6 +606,7 @@ class Client:
             verify=verify,
             cert=cert,
             verbose=self.force_verbose or verbose,
+            keep_alive=keep_alive,
         )
 
     async def post(
@@ -612,6 +628,7 @@ class Client:
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
+        keep_alive: bool = None,
     ):
         """
         Make a POST request
@@ -718,6 +735,7 @@ class Client:
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
+            keep_alive=keep_alive,
         )
 
     async def put(
@@ -739,6 +757,7 @@ class Client:
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
+        keep_alive: bool = None,
     ):
         """
         Make a PUT request
@@ -845,6 +864,7 @@ class Client:
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
+            keep_alive=keep_alive,
         )
 
     async def patch(
@@ -866,6 +886,7 @@ class Client:
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
+        keep_alive: bool = None,
     ):
         """
         Make a PATCH request
@@ -972,6 +993,7 @@ class Client:
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
+            keep_alive=keep_alive,
         )
 
     async def delete(
@@ -990,6 +1012,7 @@ class Client:
         stream_callback: StreamCallback = None,
         progress_callback: ProgressCallback = None,
         verbose: bool = False,
+        keep_alive: bool = None,
     ):
         """
         Make a DELETE request
@@ -1065,6 +1088,7 @@ class Client:
             stream_callback=stream_callback,
             progress_callback=progress_callback,
             verbose=self.force_verbose or verbose,
+            keep_alive=keep_alive,
         )
 
     async def options(
@@ -1081,6 +1105,7 @@ class Client:
         auth: Union[tuple, str] = None,
         cert: str = None,
         verbose: bool = False,
+        keep_alive: bool = None,
     ):
         """
         Make an OPTIONS request
@@ -1148,6 +1173,7 @@ class Client:
             verify=verify,
             cert=cert,
             verbose=self.force_verbose or verbose,
+            keep_alive=keep_alive,
         )
 
     async def close(self):
@@ -1161,11 +1187,11 @@ class Client:
         return await self.__loop.run_in_executor(None, self.__redc_ext.close)
 
     def __build_headers(self, headers):
+        if headers is None:
+            return self.__default_headers_list
+
         h = dict(self.__default_headers_lc)
         empty = self.__empty_set
-
-        if headers is None:
-            return [f"{k};" if v in empty else f"{k}: {v}" for k, v in h.items()]
 
         if not isinstance(headers, dict):
             raise TypeError("headers must be a dict")
@@ -1203,5 +1229,11 @@ class Client:
         if "user-agent" not in self.__default_headers:
             self.__default_headers["user-agent"] = f"redc/{redc.__version__}"
 
-        if "connection" not in self.__default_headers:
-            self.__default_headers["connection"] = "keep-alive"
+        self.__default_headers_lc = {
+            k.lower(): v for k, v in self.__default_headers.items()
+        }
+        empty = self.__empty_set
+        self.__default_headers_list = [
+            f"{k};" if v in empty else f"{k}: {v}"
+            for k, v in self.__default_headers_lc.items()
+        ]

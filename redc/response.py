@@ -25,6 +25,7 @@ class Response:
         elapsed: int,
         curl_code: int,
         curl_error_message: str,
+        verbose_output: bytes,
         raise_for_status: bool = False,
     ):
         """Represents an HTTP response of RedC"""
@@ -38,8 +39,13 @@ class Response:
         """History of requests that led to this response"""
 
         if headers:
-            self.history = Headers.parse_history(headers)
-            self.headers = self.history.pop(-1).headers
+            if redirect_count > 0:
+                self.history = Headers.parse_history(headers)
+                self.headers = self.history.pop(-1).headers
+            else:
+                last = Headers.parse_last_header(headers)
+                self.headers = last.headers
+                self.history = [last]
 
         self.__response = response
 
@@ -81,6 +87,8 @@ class Response:
         """CURL return code"""
         self.curl_error_message = curl_error_message
         """CURL error message"""
+
+        self.__verbose = verbose_output
 
         if raise_for_status:
             self.raise_for_status()
@@ -140,6 +148,13 @@ class Response:
     def ok(self):
         """Checks if the request is successful and with no errors"""
         return bool(self)
+
+    @property
+    def verbose(self) -> str:
+        """Raw verbose/debug output from libcurl (only when ``verbose=True`` on the request)"""
+        return (
+            self.__verbose.decode("utf-8", errors="replace") if self.__verbose else ""
+        )
 
     @property
     def is_redirect(self) -> bool:
