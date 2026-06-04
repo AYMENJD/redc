@@ -38,13 +38,36 @@ def parse_link_header(header):
     return links
 
 
+NON_COMBINABLE_HEADERS = {
+    "set-cookie",
+    "www-authenticate",
+    "proxy-authenticate",
+}
+
+
 class Headers(dict):
     def __init__(self, *args, **kwargs):
         super().__init__()
         self.update(*args, **kwargs)
 
     def __setitem__(self, key, value):
-        super().__setitem__(key.lower(), value)
+        key = key.lower()
+
+        if key in self:
+            if key in NON_COMBINABLE_HEADERS:
+                current = super().__getitem__(key)
+
+                if isinstance(current, list):
+                    current.append(value)
+                else:
+                    current = [current, value]
+
+                super().__setitem__(key, current)
+                return
+
+            value = f"{super().__getitem__(key)}, {value}"
+
+        super().__setitem__(key, value)
 
     def __getitem__(self, key):
         return super().__getitem__(key.lower())
