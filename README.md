@@ -1,25 +1,19 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/AYMENJD/redc/refs/heads/main/assets/images/redc-logo.svg" width="500" alt="RedC logo" />
-  <br/><br/>
-  Async HTTP client for Python with <strong>native libcurl</strong> performance.
-  <br/><br/>
+<div align="center">
 
-  <a href="https://pypi.org/project/RedC">
-    <img src="https://img.shields.io/pypi/v/redc?style=flat&logo=curl&logoColor=red&color=red" alt="PyPI version">
-  </a>
-  <a href="https://curl.se/ch/8.19.0.html">
-    <img src="https://img.shields.io/badge/Curl-v8.19.0-red?logo=curl" alt="Curl version">
-  </a>
-  <a href="https://github.com/AYMENJD/redc/actions">
-    <img src="https://img.shields.io/github/actions/workflow/status/AYMENJD/redc/build_wheels.yml?label=CI+wheels&logo=github" alt="Build status">
-  </a>
-  <a href="https://www.python.org">
-    <img src="https://img.shields.io/pypi/pyversions/redc?style=flat&logo=python" alt="Python versions" />
-  </a>
-  <a href="https://pypi.org/project/RedC">
-    <img src="https://img.shields.io/pypi/dm/RedC?style=flat&logo=pypi" alt="Downloads"/>
-  </a>
-</p>
+<img src="https://raw.githubusercontent.com/AYMENJD/redc/refs/heads/main/assets/images/redc-logo.svg" alt="RedC" width="500">
+
+Async HTTP client for Python with **native libcurl** performance.
+
+[![PyPI version](https://img.shields.io/pypi/v/redc?style=flat&logo=curl&logoColor=red&color=red)](https://pypi.org/project/RedC)
+[![Curl version](https://img.shields.io/badge/Curl-v8.19.0-red?logo=curl)](https://curl.se/ch/8.20.0.html)
+[![Build status](https://img.shields.io/github/actions/workflow/status/AYMENJD/redc/build_wheels.yml?label=CI+wheels&logo=github)](https://github.com/AYMENJD/redc/actions)
+[![Python versions](https://img.shields.io/pypi/pyversions/redc?style=flat&logo=python)](https://www.python.org)
+[![Downloads](https://img.shields.io/pepy/dt/RedC?style=flat&logo=pypi)](https://pypi.org/project/RedC)
+[![Support with TON](https://img.shields.io/badge/Support%20with-TON-0098EA?style=for-the-badge&logo=ton)](https://cupofton.pages.dev/donate?a=UQCeySURtYxvqF2jNXlsFrXuTEqPjJhGx8uoev6tUbD_HELL&n=AYMEN&t=5&c=You+deserve+a+Cup+of+TON+for+RedC%2521)
+
+</div>
+
+#
 
 ### Features
 
