@@ -501,6 +501,10 @@ class Client:
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``None``, uses the client-level default. Default is ``None``
+
         Returns:
             :class:`redc.Response`
         """
@@ -587,6 +591,10 @@ class Client:
 
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
+
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``None``, uses the client-level default. Default is ``None``
 
         Returns:
             :class:`redc.Response`
@@ -711,6 +719,10 @@ class Client:
 
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
+
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``None``, uses the client-level default. Default is ``None``
 
         Returns:
             :class:`redc.Response`
@@ -841,6 +853,10 @@ class Client:
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``None``, uses the client-level default. Default is ``None``
+
         Returns:
             :class:`redc.Response`
         """
@@ -970,6 +986,10 @@ class Client:
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``None``, uses the client-level default. Default is ``None``
+
         Returns:
             :class:`redc.Response`
         """
@@ -1068,6 +1088,10 @@ class Client:
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
 
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``None``, uses the client-level default. Default is ``None``
+
         Returns:
             :class:`redc.Response`
         """
@@ -1154,6 +1178,10 @@ class Client:
 
             verbose (``bool``, *optional*):
                 Whether to enable verbose output for the request. Default is ``False``
+
+            keep_alive (``bool``, *optional*):
+                Whether to keep the underlying TCP connection alive after the request completes.
+                When ``None``, uses the client-level default. Default is ``None``
 
         Returns:
             :class:`redc.Response`
