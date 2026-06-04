@@ -11,7 +11,7 @@ async def test_response_bytes(client):
 
 async def test_response_text_encoding(client):
     r = await client.get("/encoding/utf8")
-    text = r.text()
+    text = r.text
 
     assert isinstance(text, str)
     assert "∮" in text
@@ -20,4 +20,4 @@ async def test_response_text_encoding(client):
 async def test_force_encoding(client):
     r = await client.get("/encoding/utf8")
     with pytest.raises(UnicodeError):
-        _ = r.text("ascii")
+        _ = r.decode("ascii")

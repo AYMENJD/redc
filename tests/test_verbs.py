@@ -22,7 +22,7 @@ async def test_head_request(client):
     r = await client.head("/get")
 
     assert r.status_code == 200
-    assert r.text() == ""
+    assert r.text == ""
 
 
 async def test_options_request(client):

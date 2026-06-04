@@ -208,12 +208,23 @@ class Response:
 
         return self.status_code in (301, 308)
 
-    def text(self, encoding: str = "utf-8"):
-        """Decodes the response content into a string
+    @property
+    def text(self) -> str:
+        """Decodes the response content as a string using UTF-8
+
+        Returns:
+            ``str``
+        """
+
+        if self.status_code != -1:
+            return self.__response.decode(encoding="utf-8")
+
+    def decode(self, encoding: str) -> str:
+        """Decodes the response content as a string using the specified encoding
 
         Parameters:
-            encoding (``str``, *optional*):
-                The encoding to use for decoding. Default is "utf-8"
+            encoding (``str``):
+                The encoding to use for decoding
 
         Returns:
             ``str``
