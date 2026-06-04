@@ -1,12 +1,12 @@
-from urllib.parse import urlparse
+from ..redc_ext_url import CurlURL
 
 
 def parse_base_url(url: str) -> str:
-    res = urlparse(url)
+    u = CurlURL(url)
 
-    if not res.scheme:
+    if not u.scheme:
         raise ValueError("URL is missing a scheme (e.g., 'http://' or 'https://')")
-    if not res.netloc:
+    if not u.host:
         raise ValueError("URL is missing a network location (e.g., 'example.com')")
 
     return f"{url.rstrip('/')}/"
