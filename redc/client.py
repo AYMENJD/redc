@@ -31,7 +31,7 @@ class Client:
         backend: Literal["threaded", "asyncio"] = "asyncio",
         timeout: tuple = (30.0, 0.0),
         cert: str = None,
-        force_verbose: bool = None,
+        verbose: bool = None,
         raise_for_status: bool = False,
         json_encoder: Callable[..., bytes] = json_dumps,
         keep_alive: bool = True,
@@ -115,7 +115,7 @@ class Client:
                 Path to a CA certificate bundle file for SSL/TLS verification.
                 Default is ``None`` (uses the [trustifi](https://github.com/AYMENJD/trustifi) CA bundle)
 
-            force_verbose (``bool``, *optional*):
+            verbose (``bool``, *optional*):
                 Force verbose output for all requests. Default is ``None``
 
             raise_for_status (``bool``, *optional*):
@@ -146,9 +146,7 @@ class Client:
         assert isinstance(timeout, tuple) and len(timeout) == 2, (
             "timeout must be a tuple of (total_timeout, connect_timeout)"
         )
-        assert isinstance(force_verbose, (bool, type(None))), (
-            "force_verbose must be bool or None"
-        )
+        assert isinstance(verbose, (bool, type(None))), "verbose must be bool or None"
         assert isinstance(raise_for_status, bool), "raise_for_status must be bool"
         assert isinstance(keep_alive, bool), "keep_alive must be bool"
 
@@ -176,7 +174,7 @@ class Client:
             "backend must be one of 'threaded' or 'asyncio'"
         )
 
-        self.force_verbose = force_verbose
+        self.verbose = verbose
         self.raise_for_status = raise_for_status
         self.__keep_alive = keep_alive
 
@@ -423,7 +421,7 @@ class Client:
                 cert=cert or self.__cert,
                 stream_callback=stream_callback,
                 progress_callback=progress_callback,
-                verbose=self.force_verbose or verbose,
+                verbose=self.verbose or verbose,
                 keep_alive=keep_alive if keep_alive is not None else self.__keep_alive,
             ),
             raise_for_status=self.raise_for_status,
@@ -524,7 +522,7 @@ class Client:
             cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
-            verbose=self.force_verbose or verbose,
+            verbose=verbose,
             keep_alive=keep_alive,
         )
 
@@ -613,7 +611,7 @@ class Client:
             auth=auth,
             verify=verify,
             cert=cert,
-            verbose=self.force_verbose or verbose,
+            verbose=verbose,
             keep_alive=keep_alive,
         )
 
@@ -746,7 +744,7 @@ class Client:
             cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
-            verbose=self.force_verbose or verbose,
+            verbose=verbose,
             keep_alive=keep_alive,
         )
 
@@ -879,7 +877,7 @@ class Client:
             cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
-            verbose=self.force_verbose or verbose,
+            verbose=verbose,
             keep_alive=keep_alive,
         )
 
@@ -1012,7 +1010,7 @@ class Client:
             cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
-            verbose=self.force_verbose or verbose,
+            verbose=verbose,
             keep_alive=keep_alive,
         )
 
@@ -1111,7 +1109,7 @@ class Client:
             cert=cert,
             stream_callback=stream_callback,
             progress_callback=progress_callback,
-            verbose=self.force_verbose or verbose,
+            verbose=verbose,
             keep_alive=keep_alive,
         )
 
@@ -1200,7 +1198,7 @@ class Client:
             auth=auth,
             verify=verify,
             cert=cert,
-            verbose=self.force_verbose or verbose,
+            verbose=verbose,
             keep_alive=keep_alive,
         )
 
