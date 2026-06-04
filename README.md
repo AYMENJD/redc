@@ -5,7 +5,7 @@
 Async HTTP client for Python with **native libcurl** performance.
 
 [![PyPI version](https://img.shields.io/pypi/v/redc?style=flat&logo=curl&logoColor=red&color=red)](https://pypi.org/project/RedC)
-[![Curl version](https://img.shields.io/badge/Curl-v8.19.0-red?logo=curl)](https://curl.se/ch/8.20.0.html)
+[![Curl version](https://img.shields.io/badge/Curl-v8.20.0-red?logo=curl)](https://curl.se/ch/8.20.0.html)
 [![Build status](https://img.shields.io/github/actions/workflow/status/AYMENJD/redc/build_wheels.yml?label=CI+wheels&logo=github)](https://github.com/AYMENJD/redc/actions)
 [![Python versions](https://img.shields.io/pypi/pyversions/redc?style=flat&logo=python)](https://www.python.org)
 [![Downloads](https://img.shields.io/pepy/dt/RedC?style=flat&logo=pypi)](https://pypi.org/project/RedC)
