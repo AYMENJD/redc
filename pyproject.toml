@@ -63,6 +63,9 @@ build-verbosity = 1
 build-frontend = "build[uv]"
 skip = "*musllinux*"
 archs = ["native"]
+test-extras = "test"
+test-command = "pytest -v -s {project}/tests"
+test-skip = "*win_*"
 
 [tool.cibuildwheel.linux]
 before-all = "bash .github/workflows/scripts/before-all-linux.sh"
