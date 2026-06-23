@@ -234,6 +234,21 @@ class Client:
 
         return self.__redc_ext.curl_version()
 
+    @property
+    def cookies(self) -> dict[str, str]:
+        """Returns all stored session cookies as a dict
+
+        Returns:
+            ``dict[str, str]``
+        """
+        cookies = {}
+        for cookie in self.__redc_ext.get_cookies(netscape=False):
+            name = cookie["name"]
+            value = cookie["value"]
+            if name:
+                cookies[name] = value
+        return cookies
+
     def get_cookies(self, netscape: bool = False) -> Union[list[dict], list[str]]:
         """Retrieves currently stored session cookies
 
