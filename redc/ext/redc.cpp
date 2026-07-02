@@ -348,15 +348,9 @@ void RedC::clear_cookies() {
 }
 
 void RedC::apply_socket_changes() {
-  for (auto &[s, what] : pending_socket_changes_) {
-    int old_what = 0;
-    auto it = socket_map_.find(s);
-    if (it != socket_map_.end()) {
-      old_what = it->second;
-    }
-
-    bool want_read = (what & CURL_POLL_IN);
-    bool has_read = (old_what & CURL_POLL_IN);
+  for (auto &[s, change] : pending_socket_changes_) {
+    bool want_read = (change.new_what & CURL_POLL_IN);
+    bool has_read = (change.old_what & CURL_POLL_IN);
 
     if (want_read && !has_read) {
       loop_add_reader_(s, socket_event_callback_, s, CURL_CSELECT_IN);
@@ -364,16 +358,14 @@ void RedC::apply_socket_changes() {
       loop_remove_reader_(s);
     }
 
-    bool want_write = (what & CURL_POLL_OUT);
-    bool has_write = (old_what & CURL_POLL_OUT);
+    bool want_write = (change.new_what & CURL_POLL_OUT);
+    bool has_write = (change.old_what & CURL_POLL_OUT);
 
     if (want_write && !has_write) {
       loop_add_writer_(s, socket_event_callback_, s, CURL_CSELECT_OUT);
     } else if (!want_write && has_write) {
       loop_remove_writer_(s);
     }
-
-    socket_map_[s] = what;
   }
 
   pending_socket_changes_.clear();
@@ -382,23 +374,36 @@ void RedC::apply_socket_changes() {
 int RedC::socket_callback(CURL *e, curl_socket_t s, int what, void *userp,
                           void *socketp) {
   RedC *self = static_cast<RedC *>(userp);
+  SocketState *state = static_cast<SocketState *>(socketp);
 
   if (what == CURL_POLL_REMOVE) {
     acq_gil gil;
-    auto it = self->socket_map_.find(s);
-    if (it != self->socket_map_.end()) {
-      int old_what = it->second;
-      if (old_what & CURL_POLL_IN) {
+    if (state) {
+      if (state->poll_what & CURL_POLL_IN) {
         self->loop_remove_reader_(s);
       }
-      if (old_what & CURL_POLL_OUT) {
+      if (state->poll_what & CURL_POLL_OUT) {
         self->loop_remove_writer_(s);
       }
-      self->socket_map_.erase(it);
+      delete state;
     }
     self->pending_socket_changes_.erase(s);
+    return 0;
+  }
+
+  int old_what = state ? state->poll_what : 0;
+
+  auto it = self->pending_socket_changes_.find(s);
+  if (it == self->pending_socket_changes_.end()) {
+    self->pending_socket_changes_[s] = {old_what, what};
   } else {
-    self->pending_socket_changes_[s] = what;
+    it->second.new_what = what;
+  }
+
+  if (!state) {
+    curl_multi_assign(self->multi_handle_, s, new SocketState{what});
+  } else {
+    state->poll_what = what;
   }
 
   return 0;

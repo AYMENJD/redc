@@ -120,8 +120,12 @@ struct Result {
 };
 
 struct SocketChange {
-  curl_socket_t socket;
-  int what;
+  int old_what;
+  int new_what;
+};
+
+struct SocketState {
+  int poll_what{0};
 };
 
 class RedC {
@@ -230,12 +234,12 @@ private:
   moodycamel::ReaderWriterQueue<PendingRequest> queue_;
 
   bool process_scheduled_{false};
-  ankerl::unordered_dense::map<curl_socket_t, int> socket_map_;
   ankerl::unordered_dense::map<CURL *, std::unique_ptr<Request>>
       active_requests_;
   std::vector<Result> completed_batch_;
   std::vector<std::pair<int, int>> pending_socket_events_;
-  ankerl::unordered_dense::map<curl_socket_t, int> pending_socket_changes_;
+  ankerl::unordered_dense::map<curl_socket_t, SocketChange>
+      pending_socket_changes_;
 };
 
 #endif // REDC_H
