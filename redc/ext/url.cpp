@@ -290,12 +290,6 @@ struct CurlURL {
   }
 };
 
-static int curlurl_tp_traverse(PyObject *self, visitproc visit, void *arg) {
-  return 0;
-}
-
-static int curlurl_tp_clear(PyObject *self) { return 0; }
-
 #define BIND_URL_PART(name, CURL_PART)                                         \
   .def_prop_rw(                                                                \
       name, [](const CurlURL &u) { return u.get_part(CURL_PART); },            \
@@ -303,13 +297,8 @@ static int curlurl_tp_clear(PyObject *self) { return 0; }
         u.set_part(CURL_PART, v);                                              \
       })
 
-static PyType_Slot curlurl_slots[] = {
-    {Py_tp_traverse, (void *)curlurl_tp_traverse},
-    {Py_tp_clear, (void *)curlurl_tp_clear},
-    {0, nullptr}};
-
 NB_MODULE(redc_ext_url, m) {
-  nb::class_<CurlURL>(m, "CurlURL", nb::type_slots(curlurl_slots),
+  nb::class_<CurlURL>(m, "CurlURL",
                       R"doc(
 URL parser and builder backed by libcurl.
 
@@ -520,5 +509,6 @@ Returns:
 
       .def("__repr__", [](const CurlURL &u) {
         return nb::str("<CurlURL '") + u.str() + nb::str("'>");
-      });
+      })
+      .freeze();
 }

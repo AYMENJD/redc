@@ -55,6 +55,10 @@ RedC::RedC(const long &read_buffer_size, const bool &persist_cookies,
       handle_pool_(pool_max_size), queue_(pool_max_size) {
   {
     acq_gil gil;
+    if (!gil.is_valid()) {
+      throw std::runtime_error("Python interpreter is shutting down");
+    }
+
     asyncio_ = nb::module_::import_("asyncio");
     loop_ = asyncio_.attr("get_event_loop")();
     loop_call_soon_threadsafe_ = loop_.attr("call_soon_threadsafe");
@@ -183,17 +187,20 @@ void RedC::close() {
   } else {
     acq_gil gil;
 
-    if (!timer_handle_.is_none()) {
-      timer_handle_.attr("cancel")();
+    if (gil.is_valid() && !timer_handle_.is_none()) {
+      try {
+        timer_handle_.attr("cancel")();
+      } catch (...) {
+      }
       timer_handle_ = nb::none();
     }
 
     for (auto &[easy_handle, request_ptr] : active_requests_) {
-      try {
-        if (!request_ptr->future.is_none()) {
+      if (gil.is_valid() && request_ptr && !request_ptr->future.is_none()) {
+        try {
           request_ptr->future.attr("cancel")();
+        } catch (...) {
         }
-      } catch (...) {
       }
 
       curl_multi_remove_handle(multi_handle_, easy_handle);
@@ -306,15 +313,20 @@ py_list RedC::get_cookies(bool netscape) {
 
     CURLcode res = curl_easy_getinfo(easy, CURLINFO_COOKIELIST, &cookies);
     if (res == CURLE_OK && cookies) {
-      struct curl_slist *nc = cookies;
-      while (nc) {
-        if (netscape) {
-          result.append(nc->data);
-        } else {
-          result.append(parse_cookie_string(nc->data));
-        }
-        nc = nc->next;
+      size_t n = 0;
+      for (struct curl_slist *nc = cookies; nc; nc = nc->next) {
+        ++n;
       }
+
+      nb::list_builder builder(n);
+      for (struct curl_slist *nc = cookies; nc; nc = nc->next) {
+        if (netscape) {
+          builder.put(nc->data);
+        } else {
+          builder.put(parse_cookie_string(nc->data));
+        }
+      }
+      result = builder.commit();
     }
 
     if (cookies) {
@@ -378,6 +390,12 @@ int RedC::socket_callback(CURL *e, curl_socket_t s, int what, void *userp,
 
   if (what == CURL_POLL_REMOVE) {
     acq_gil gil;
+    if (!gil.is_valid()) {
+      delete state;
+      self->pending_socket_changes_.erase(s);
+      return 0;
+    }
+
     if (state) {
       if (state->poll_what & CURL_POLL_IN) {
         self->loop_remove_reader_(s);
@@ -387,6 +405,7 @@ int RedC::socket_callback(CURL *e, curl_socket_t s, int what, void *userp,
       }
       delete state;
     }
+
     self->pending_socket_changes_.erase(s);
     return 0;
   }
@@ -412,6 +431,9 @@ int RedC::socket_callback(CURL *e, curl_socket_t s, int what, void *userp,
 int RedC::timer_callback(CURLM *multi, long timeout_ms, void *userp) {
   RedC *self = static_cast<RedC *>(userp);
   acq_gil gil;
+  if (!gil.is_valid()) {
+    return 0;
+  }
 
   try {
     if (!self->timer_handle_.is_none()) {
@@ -749,14 +771,16 @@ void RedC::worker_loop() {
       const CURLMcode mcurl_code = curl_multi_add_handle(multi_handle_, easy);
       if (mcurl_code != CURLM_OK) {
         acq_gil gil;
-        loop_call_soon_threadsafe_(nb::cpp_function(
-            [request = std::move(pending.request), mcurl_code]() {
-              const char *err = curl_multi_strerror(mcurl_code);
+        if (gil.is_valid()) {
+          loop_call_soon_threadsafe_(nb::cpp_function(
+              [request = std::move(pending.request), mcurl_code]() {
+                const char *err = curl_multi_strerror(mcurl_code);
 
-              request->future_set_exception(std::runtime_error(
-                  "CURLM " + std::to_string((int)mcurl_code) + ": " +
-                  (err ? err : "unknown error")));
-            }));
+                request->future_set_exception(std::runtime_error(
+                    "CURLM " + std::to_string((int)mcurl_code) + ": " +
+                    (err ? err : "unknown error")));
+              }));
+        }
 
         release_handle(easy);
         continue;
@@ -809,18 +833,18 @@ void RedC::worker_loop() {
 
     if (had_completed) {
       acq_gil gil;
-      loop_call_soon_threadsafe_(
-          nb::cpp_function([this, batch = std::make_unique<std::vector<Result>>(
-                                      std::move(result_batch))]() {
-            for (auto &req : *batch) {
-              this->complete_request_future(req);
-            }
-          }));
+      if (gil.is_valid()) {
+        loop_call_soon_threadsafe_(nb::cpp_function(
+            [this, batch = std::make_unique<std::vector<Result>>(
+                       std::move(result_batch))]() {
+              for (auto &req : *batch) {
+                this->complete_request_future(req);
+              }
+            }));
+      }
       result_batch.clear();
     }
   }
-
-  // clean up
 
   curl_multi_perform(multi_handle_, &still_running_);
 
@@ -845,7 +869,7 @@ void RedC::worker_loop() {
   }
 
   acq_gil gil;
-  if (had_completed_final) {
+  if (gil.is_valid() && had_completed_final) {
     loop_call_soon_threadsafe_(
         nb::cpp_function([this, batch = std::make_unique<std::vector<Result>>(
                                     std::move(result_batch))]() {
@@ -860,12 +884,14 @@ void RedC::worker_loop() {
     curl_multi_remove_handle(multi_handle_, easy);
     curl_easy_cleanup(easy);
 
-    try {
-      loop_call_soon_threadsafe_(
-          nb::cpp_function([future = std::move(request->future)]() {
-            future.attr("cancel")();
-          }));
-    } catch (...) {
+    if (gil.is_valid()) {
+      try {
+        loop_call_soon_threadsafe_(
+            nb::cpp_function([future = std::move(request->future)]() {
+              future.attr("cancel")();
+            }));
+      } catch (...) {
+      }
     }
   }
   active.clear();
@@ -880,7 +906,7 @@ void RedC::CHECK_RUNNING() {
 size_t RedC::read_callback(char *buffer, size_t size, size_t nitems,
                            Request *clientp) {
   acq_gil gil;
-  if (clientp->body_stream.is_none()) {
+  if (!gil.is_valid() || clientp->body_stream.is_none()) {
     return 0; // abort transfer
   }
 
@@ -894,6 +920,10 @@ size_t RedC::mime_read_callback(char *buffer, size_t size, size_t nitems,
   auto *stream = static_cast<MimeStream *>(arg);
 
   acq_gil gil;
+  if (!gil.is_valid()) {
+    return CURL_READFUNC_ABORT;
+  }
+
   try {
     auto memview = mv_from_buffer(buffer, size * nitems);
     auto result = stream->readinto(memview);
@@ -916,6 +946,9 @@ size_t RedC::progress_callback(Request *clientp, curl_off_t dltotal,
   if (clientp->has_progress_callback) {
     try {
       acq_gil gil;
+      if (!gil.is_valid()) {
+        return 1; // abort transfer
+      }
       clientp->progress_callback(dltotal, dlnow, ultotal, ulnow);
     } catch (const std::exception &e) {
       std::cerr << "Error in progress_callback: " << e.what() << std::endl;
@@ -941,6 +974,9 @@ size_t RedC::write_callback(char *data, size_t size, size_t nmemb,
   if (clientp->has_stream_callback) {
     try {
       acq_gil gil;
+      if (!gil.is_valid()) {
+        return 0; // abort transfer
+      }
       clientp->stream_callback(py_bytes(data, total_size), total_size);
     } catch (const std::exception &e) {
       std::cerr << "Error in stream_callback: " << e.what() << std::endl;
@@ -1004,6 +1040,27 @@ string RedC::redc_curl_version() {
   return version_str.str();
 }
 
+static int visit_request(Request *req, visitproc visit, void *arg) {
+  if (!req) {
+    return 0;
+  }
+
+  Py_VISIT(req->future.ptr());
+  Py_VISIT(req->future_set_result.ptr());
+  Py_VISIT(req->future_set_exception.ptr());
+  Py_VISIT(req->loop.ptr());
+  Py_VISIT(req->stream_callback.ptr());
+  Py_VISIT(req->progress_callback.ptr());
+  Py_VISIT(req->body_stream.ptr());
+  Py_VISIT(req->body_stream_readinto.ptr());
+  Py_VISIT(req->raw_data.ptr());
+  for (auto &ms : req->mime_streams) {
+    Py_VISIT(ms.stream.ptr());
+    Py_VISIT(ms.readinto.ptr());
+  }
+  return 0;
+}
+
 int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
   Py_VISIT(Py_TYPE(self));
   if (!nb::inst_ready(self))
@@ -1016,6 +1073,7 @@ int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
   Py_VISIT(me->loop_create_future_.ptr());
   Py_VISIT(me->socket_event_callback_.ptr());
   Py_VISIT(me->timer_event_callback_.ptr());
+  Py_VISIT(me->process_events_callback_.ptr());
   Py_VISIT(me->timer_handle_.ptr());
   Py_VISIT(me->loop_add_reader_.ptr());
   Py_VISIT(me->loop_remove_reader_.ptr());
@@ -1023,25 +1081,74 @@ int redc_tp_traverse(PyObject *self, visitproc visit, void *arg) {
   Py_VISIT(me->loop_remove_writer_.ptr());
   Py_VISIT(me->loop_call_later_.ptr());
 
+  for (auto &entry : me->active_requests_) {
+    int ret = visit_request(entry.second.get(), visit, arg);
+    if (ret) {
+      return ret;
+    }
+  }
+  for (auto &result : me->completed_batch_) {
+    int ret = visit_request(result.request.get(), visit, arg);
+    if (ret) {
+      return ret;
+    }
+  }
+
   return 0;
 }
 
 int redc_tp_clear(PyObject *self) {
   RedC *c = nb::inst_ptr<RedC>(self);
-  c->asyncio_ = {};
-  c->loop_ = {};
-  c->loop_call_soon_threadsafe_ = {};
-  c->loop_call_soon_ = {};
-  c->loop_create_future_ = {};
-  c->socket_event_callback_ = {};
-  c->timer_event_callback_ = {};
-  c->timer_handle_ = {};
-  c->loop_add_reader_ = {};
-  c->loop_remove_reader_ = {};
-  c->loop_add_writer_ = {};
-  c->loop_remove_writer_ = {};
-  c->loop_call_later_ = {};
+  std::vector<py_object> drop;
 
+  auto steal = [&](py_object &o) {
+    if (o.is_valid()) {
+      drop.push_back(std::move(o));
+    }
+  };
+
+  steal(c->asyncio_);
+  steal(c->loop_);
+  steal(c->loop_call_soon_threadsafe_);
+  steal(c->loop_call_soon_);
+  steal(c->loop_create_future_);
+  steal(c->socket_event_callback_);
+  steal(c->timer_event_callback_);
+  steal(c->process_events_callback_);
+  steal(c->timer_handle_);
+  steal(c->loop_add_reader_);
+  steal(c->loop_remove_reader_);
+  steal(c->loop_add_writer_);
+  steal(c->loop_remove_writer_);
+  steal(c->loop_call_later_);
+
+  auto steal_req = [&](Request *req) {
+    if (!req) {
+      return;
+    }
+    steal(req->future);
+    steal(req->future_set_result);
+    steal(req->future_set_exception);
+    steal(req->loop);
+    steal(req->stream_callback);
+    steal(req->progress_callback);
+    steal(req->body_stream);
+    steal(req->body_stream_readinto);
+    steal(req->raw_data);
+    for (auto &ms : req->mime_streams) {
+      steal(ms.stream);
+      steal(ms.readinto);
+    }
+  };
+
+  for (auto &entry : c->active_requests_) {
+    steal_req(entry.second.get());
+  }
+  for (auto &result : c->completed_batch_) {
+    steal_req(result.request.get());
+  }
+
+  (void)drop;
   return 0;
 }
 
