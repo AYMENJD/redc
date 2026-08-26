@@ -5,7 +5,18 @@ JOBS=$(( $(nproc) - 1 ))
 [ "$JOBS" -lt 1 ] && JOBS=1
 
 # deps
-yum install wget gcc make perl-IPC-Cmd perl-Time-Piece -y
+yum install wget gcc make perl-IPC-Cmd perl-Time-Piece gettext gettext-devel -y
+
+# make
+wget "https://ftp.gnu.org/gnu/make/make-4.4.tar.gz"
+tar -xzvf make-4.4.tar.gz
+cd make-4.4
+
+./configure
+make -j"$JOBS"
+make install
+hash -r
+ldconfig
 
 # libunistring
 wget -O libunistring.tar.gz https://ftp.gnu.org/gnu/libunistring/libunistring-1.4.tar.gz

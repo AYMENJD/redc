@@ -5,11 +5,22 @@ JOBS=$(( $(sysctl -n hw.ncpu) - 1 ))
 [ "$JOBS" -lt 1 ] && JOBS=1
 
 # deps
-brew install cmake autoconf automake libtool
+brew install cmake autoconf automake libtool gettext
 
 export LDFLAGS="-L/usr/local/lib -Wl,-rpath,/usr/local/lib"
 export CPPFLAGS="-I/usr/local/include"
 export PKG_CONFIG_PATH="/usr/local/lib/pkgconfig"
+
+# libiconv
+wget -O libiconv.tar.gz https://ftp.gnu.org/gnu/libiconv/libiconv-1.19.tar.gz
+tar -xzvf libiconv.tar.gz
+rm libiconv.tar.gz
+
+cd libiconv-1.19
+./configure --prefix=/usr/local
+make -j"$JOBS"
+sudo make install
+cd .. && rm -rf libiconv-1.19
 
 # libunistring
 wget -O libunistring.tar.gz https://ftp.gnu.org/gnu/libunistring/libunistring-1.4.tar.gz

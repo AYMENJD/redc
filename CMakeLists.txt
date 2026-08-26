@@ -60,26 +60,30 @@ nanobind_add_module(
 target_link_libraries(redc_ext PRIVATE CURL::libcurl)
 target_link_libraries(redc_ext_url PRIVATE CURL::libcurl)
 
-nanobind_add_stub(
-  redc_ext_stub
-  MODULE redc_ext
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/redc_ext.pyi
-  PYTHON_PATH $<TARGET_FILE_DIR:redc_ext>
-  DEPENDS redc_ext
-)
-nanobind_add_stub(
-  redc_ext_url_stub
-  MODULE redc_ext_url
-  OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/redc_ext_url.pyi
-  PYTHON_PATH $<TARGET_FILE_DIR:redc_ext_url>
-  DEPENDS redc_ext_url
-  MARKER_FILE ${CMAKE_CURRENT_BINARY_DIR}/py.typed
-)
-
 install(TARGETS redc_ext LIBRARY DESTINATION redc/)
 install(TARGETS redc_ext_url LIBRARY DESTINATION redc/)
-install(FILES
-  ${CMAKE_CURRENT_BINARY_DIR}/redc_ext.pyi
-  ${CMAKE_CURRENT_BINARY_DIR}/redc_ext_url.pyi
-  ${CMAKE_CURRENT_BINARY_DIR}/py.typed
-  DESTINATION redc/)
+
+# Importing the extension at build time needs curl's DLLs on PATH, which
+# the isolated Windows build does not have. Linux/macOS use rpath.
+if(NOT WIN32)
+  nanobind_add_stub(
+    redc_ext_stub
+    MODULE redc_ext
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/redc_ext.pyi
+    PYTHON_PATH $<TARGET_FILE_DIR:redc_ext>
+    DEPENDS redc_ext
+  )
+  nanobind_add_stub(
+    redc_ext_url_stub
+    MODULE redc_ext_url
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/redc_ext_url.pyi
+    PYTHON_PATH $<TARGET_FILE_DIR:redc_ext_url>
+    DEPENDS redc_ext_url
+    MARKER_FILE ${CMAKE_CURRENT_BINARY_DIR}/py.typed
+  )
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/redc_ext.pyi
+    ${CMAKE_CURRENT_BINARY_DIR}/redc_ext_url.pyi
+    ${CMAKE_CURRENT_BINARY_DIR}/py.typed
+    DESTINATION redc/)
+endif()
