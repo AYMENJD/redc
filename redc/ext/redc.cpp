@@ -676,6 +676,17 @@ py_object RedC::request(const char *method, const char *url,
   try {
     curl_easy_setopt(easy, CURLOPT_SHARE, share_handle_);
     curl_easy_setopt(easy, CURLOPT_URL, url);
+
+#if LIBCURL_VERSION_NUM >= 0x075500 // 7.85.0+
+    curl_easy_setopt(easy, CURLOPT_PROTOCOLS_STR, "http,https,file");
+    curl_easy_setopt(easy, CURLOPT_REDIR_PROTOCOLS_STR, "http,https");
+#else
+    curl_easy_setopt(easy, CURLOPT_PROTOCOLS,
+                     CURLPROTO_HTTP | CURLPROTO_HTTPS | CURLPROTO_FILE);
+    curl_easy_setopt(easy, CURLOPT_REDIR_PROTOCOLS,
+                     CURLPROTO_HTTP | CURLPROTO_HTTPS);
+#endif
+
     curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method);
     curl_easy_setopt(easy, CURLOPT_HTTP_VERSION,
                      get_http_version_bit(http_version));
