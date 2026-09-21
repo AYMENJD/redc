@@ -31,6 +31,56 @@ static long get_http_version_bit(const char *version) {
   }
 }
 
+static long ssl_version_value(const char *version, const char *name) {
+  if (version == nullptr || version[0] == '\0') {
+    return CURL_SSLVERSION_DEFAULT;
+  }
+
+  switch (version[0]) {
+  case 'd':
+    if (version[1] == 'e' && version[2] == 'f' && version[3] == 'a' &&
+        version[4] == 'u' && version[5] == 'l' && version[6] == 't' &&
+        version[7] == '\0') {
+      return CURL_SSLVERSION_DEFAULT;
+    }
+    break;
+  case '1':
+    if (version[1] == '.') {
+      switch (version[2]) {
+      case '0':
+        if (version[3] == '\0')
+          return CURL_SSLVERSION_TLSv1_0;
+        break;
+      case '1':
+        if (version[3] == '\0')
+          return CURL_SSLVERSION_TLSv1_1;
+        break;
+      case '2':
+        if (version[3] == '\0')
+          return CURL_SSLVERSION_TLSv1_2;
+        break;
+      case '3':
+        if (version[3] == '\0')
+          return CURL_SSLVERSION_TLSv1_3;
+        break;
+      }
+    }
+    break;
+  }
+
+  throw std::invalid_argument(
+      string(name) + " must be one of 'default', '1.0', '1.1', '1.2', '1.3'");
+}
+
+static long ssl_version_bits(const char *version, const char *version_max) {
+  long min_version = ssl_version_value(version, "tls_version");
+  long max_version = ssl_version_value(version_max, "tls_version_max");
+  if (max_version != CURL_SSLVERSION_DEFAULT) {
+    max_version <<= 16;
+  }
+  return min_version | max_version;
+}
+
 static const char *get_http_version_from_bit(long version) {
   switch (version) {
   case CURL_HTTP_VERSION_1_0:
@@ -604,7 +654,8 @@ py_object RedC::request(const char *method, const char *url,
                         const py_object &params, const py_object &raw_data,
                         const py_object &data, const py_object &files,
                         const py_object &headers, const py_object &cookies,
-                        const char *http_version, const long &timeout_ms,
+                        const char *http_version, const char *ssl_version,
+                        const char *ssl_version_max, const long &timeout_ms,
                         const long &connect_timeout_ms,
                         const py_object &allow_redirects, const char *proxy_url,
                         const py_object &auth, const bool &verify,
@@ -628,6 +679,11 @@ py_object RedC::request(const char *method, const char *url,
     curl_easy_setopt(easy, CURLOPT_CUSTOMREQUEST, method);
     curl_easy_setopt(easy, CURLOPT_HTTP_VERSION,
                      get_http_version_bit(http_version));
+
+    long ssl_bits = ssl_version_bits(ssl_version, ssl_version_max);
+    if (ssl_bits != 0) {
+      curl_easy_setopt(easy, CURLOPT_SSLVERSION, ssl_bits);
+    }
 
     if (keep_alive) {
       curl_easy_setopt(easy, CURLOPT_TCP_KEEPALIVE, 1L);
@@ -1170,7 +1226,8 @@ NB_MODULE(redc_ext, m) {
            arg("params") = nb::none(), arg("raw_data") = nb::none(),
            arg("data") = nb::none(), arg("files") = nb::none(),
            arg("headers") = nb::none(), arg("cookies") = nb::none(),
-           arg("http_version") = "3", arg("timeout_ms") = 60 * 1000,
+           arg("http_version") = "3", arg("tls_version") = "default",
+           arg("tls_version_max") = "default", arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirects") = true,
            arg("proxy_url") = "", arg("auth") = nb::none(),
            arg("verify") = true, arg("cert") = "",

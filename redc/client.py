@@ -11,6 +11,23 @@ from .redc_ext import RedC
 from .response import Response
 from .utils import Headers, json_dumps, parse_base_url
 
+_SSL_VERSIONS = ("default", "1.0", "1.1", "1.2", "1.3")
+_SSL_RANK = {"1.0": 1, "1.1": 2, "1.2": 3, "1.3": 4}
+
+
+def _check_tls_version(name, value):
+    assert isinstance(value, str), f"{name} must be string"
+    assert value in _SSL_VERSIONS, (
+        f"{name} must be one of 'default', '1.0', '1.1', '1.2', '1.3'"
+    )
+
+
+def _check_tls_range(tls_version, tls_version_max):
+    if tls_version == "default" or tls_version_max == "default":
+        return
+    if _SSL_RANK[tls_version] > _SSL_RANK[tls_version_max]:
+        raise ValueError("tls_version must be less than or equal to tls_version_max")
+
 
 class Client:
     """RedC client for making HTTP requests"""
@@ -22,6 +39,8 @@ class Client:
         headers: dict = None,
         persist_cookies: bool = False,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = "3",
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
         max_total_connections: int = 1024,
         max_host_connections: int = 64,
         max_idle_connections: int = 2048,
@@ -61,6 +80,14 @@ class Client:
 
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                Default is ``default``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                Default is ``default``
 
             max_total_connections (``int``, *optional*):
                 The maximum number of active TCP connections allowed simultaneously.
@@ -142,6 +169,9 @@ class Client:
         assert http_version in self.allowed_http_versions, (
             "http_version must be one of 'auto', '1', '1.1', '2', '3'"
         )
+        _check_tls_version("tls_version", tls_version)
+        _check_tls_version("tls_version_max", tls_version_max)
+        _check_tls_range(tls_version, tls_version_max)
         assert isinstance(cert, (str, type(None))), "cert must be string"
         assert isinstance(timeout, tuple) and len(timeout) == 2, (
             "timeout must be a tuple of (total_timeout, connect_timeout)"
@@ -185,6 +215,8 @@ class Client:
         self.__default_headers = Headers(headers if isinstance(headers, dict) else {})
 
         self.__default_http_version = http_version
+        self.__default_tls_version = tls_version
+        self.__default_tls_version_max = tls_version_max
         self.__allowed_http_versions_set = set(self.allowed_http_versions)
         self.__empty_set = {"", None}
         self.__timeout = timeout
@@ -278,6 +310,8 @@ class Client:
         headers: dict[str, str] = None,
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
@@ -340,6 +374,14 @@ class Client:
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
@@ -395,6 +437,18 @@ class Client:
                 "http_version must be one of 'auto', '1', '1.1', '2', '3'"
             )
 
+        if tls_version is None:
+            tls_version = self.__default_tls_version
+        else:
+            _check_tls_version("tls_version", tls_version)
+
+        if tls_version_max is None:
+            tls_version_max = self.__default_tls_version_max
+        else:
+            _check_tls_version("tls_version_max", tls_version_max)
+
+        _check_tls_range(tls_version, tls_version_max)
+
         if json is not None:
             json = self.json_encoder(json)
             if headers is None:
@@ -427,6 +481,8 @@ class Client:
                 headers=headers,
                 cookies=cookies,
                 http_version=http_version or self.__default_http_version,
+                tls_version=tls_version,
+                tls_version_max=tls_version_max,
                 timeout_ms=int(timeout * 1000),
                 connect_timeout_ms=int(connect_timeout * 1000),
                 allow_redirects=allow_redirects,
@@ -449,6 +505,8 @@ class Client:
         headers: dict[str, str] = None,
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
@@ -483,6 +541,14 @@ class Client:
 
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
@@ -529,6 +595,8 @@ class Client:
             headers=headers,
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
+            tls_version=tls_version,
+            tls_version_max=tls_version_max,
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
@@ -548,6 +616,8 @@ class Client:
         headers: dict[str, str] = None,
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
@@ -580,6 +650,14 @@ class Client:
 
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
@@ -620,6 +698,8 @@ class Client:
             headers=headers,
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
+            tls_version=tls_version,
+            tls_version_max=tls_version_max,
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
@@ -640,6 +720,8 @@ class Client:
         headers: dict[str, str] = None,
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
@@ -703,6 +785,14 @@ class Client:
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
@@ -751,6 +841,8 @@ class Client:
             headers=headers,
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
+            tls_version=tls_version,
+            tls_version_max=tls_version_max,
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
@@ -773,6 +865,8 @@ class Client:
         headers: dict[str, str] = None,
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
@@ -836,6 +930,14 @@ class Client:
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
@@ -884,6 +986,8 @@ class Client:
             headers=headers,
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
+            tls_version=tls_version,
+            tls_version_max=tls_version_max,
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
@@ -906,6 +1010,8 @@ class Client:
         headers: dict[str, str] = None,
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
@@ -969,6 +1075,14 @@ class Client:
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
 
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
                 If ``None``, the default timeout specified in ``Client`` is used.
@@ -1017,6 +1131,8 @@ class Client:
             headers=headers,
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
+            tls_version=tls_version,
+            tls_version_max=tls_version_max,
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
@@ -1036,6 +1152,8 @@ class Client:
         headers: dict[str, str] = None,
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
@@ -1070,6 +1188,14 @@ class Client:
 
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
@@ -1116,6 +1242,8 @@ class Client:
             headers=headers,
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
+            tls_version=tls_version,
+            tls_version_max=tls_version_max,
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
@@ -1135,6 +1263,8 @@ class Client:
         headers: dict[str, str] = None,
         cookies: dict[str, str] = None,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
@@ -1167,6 +1297,14 @@ class Client:
 
             http_version (``auto`` | ``1`` | ``1.1`` | ``2`` | ``3``, *optional*):
                 Preferred HTTP version to attempt; libcurl may downgrade version as needed. Default is ``3``
+
+            tls_version (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Minimum TLS version (this version or later). ``default`` leaves the floor to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
+
+            tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
+                Maximum TLS version. ``default`` leaves the cap to libcurl.
+                When ``None``, uses the client-level default. Default is ``None``
 
             timeout (``tuple``, *optional*):
                 A tuple of ``(total_timeout, connect_timeout)`` in seconds to override the default timeout.
@@ -1207,6 +1345,8 @@ class Client:
             headers=headers,
             cookies=cookies,
             http_version=http_version or self.__default_http_version,
+            tls_version=tls_version,
+            tls_version_max=tls_version_max,
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
