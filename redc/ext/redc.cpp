@@ -72,6 +72,32 @@ static long ssl_version_value(const char *version, const char *name) {
       string(name) + " must be one of 'default', '1.0', '1.1', '1.2', '1.3'");
 }
 
+static long ip_resolve_value(const char *ip_version) {
+  if (ip_version == nullptr || ip_version[0] == '\0') {
+    return CURL_IPRESOLVE_WHATEVER;
+  }
+
+  switch (ip_version[0]) {
+  case 'a':
+    if (ip_version[1] == 'n' && ip_version[2] == 'y' && ip_version[3] == '\0') {
+      return CURL_IPRESOLVE_WHATEVER;
+    }
+    break;
+  case '4':
+    if (ip_version[1] == '\0') {
+      return CURL_IPRESOLVE_V4;
+    }
+    break;
+  case '6':
+    if (ip_version[1] == '\0') {
+      return CURL_IPRESOLVE_V6;
+    }
+    break;
+  }
+
+  throw std::invalid_argument("ip_version must be one of 'any', '4', '6'");
+}
+
 static long ssl_version_bits(const char *version, const char *version_max) {
   long min_version = ssl_version_value(version, "tls_version");
   long max_version = ssl_version_value(version_max, "tls_version_max");
@@ -658,6 +684,7 @@ py_object RedC::request(const char *method, const char *url,
                         const char *ssl_version_max, const long &timeout_ms,
                         const long &connect_timeout_ms,
                         const py_object &allow_redirects, const char *proxy_url,
+                        const char *interface_name, const char *ip_version,
                         const py_object &auth, const bool &verify,
                         const char *cert, const py_object &stream_callback,
                         const py_object &progress_callback, const bool &verbose,
@@ -748,6 +775,10 @@ py_object RedC::request(const char *method, const char *url,
     if (!isNullOrEmpty(proxy_url)) {
       curl_easy_setopt(easy, CURLOPT_PROXY, proxy_url);
     }
+    if (!isNullOrEmpty(interface_name)) {
+      curl_easy_setopt(easy, CURLOPT_INTERFACE, interface_name);
+    }
+    curl_easy_setopt(easy, CURLOPT_IPRESOLVE, ip_resolve_value(ip_version));
 
     if (!isNullOrEmpty(cert)) {
       curl_easy_setopt(easy, CURLOPT_CAINFO, cert);
@@ -1240,7 +1271,8 @@ NB_MODULE(redc_ext, m) {
            arg("http_version") = "3", arg("tls_version") = "default",
            arg("tls_version_max") = "default", arg("timeout_ms") = 60 * 1000,
            arg("connect_timeout_ms") = 0, arg("allow_redirects") = true,
-           arg("proxy_url") = "", arg("auth") = nb::none(),
+           arg("proxy_url") = "", arg("interface") = "",
+           arg("ip_version") = "any", arg("auth") = nb::none(),
            arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false,

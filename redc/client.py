@@ -13,6 +13,7 @@ from .utils import Headers, json_dumps, parse_base_url
 
 _SSL_VERSIONS = ("default", "1.0", "1.1", "1.2", "1.3")
 _SSL_RANK = {"1.0": 1, "1.1": 2, "1.2": 3, "1.3": 4}
+_IP_VERSIONS = ("any", "4", "6")
 
 
 def _check_tls_version(name, value):
@@ -29,6 +30,11 @@ def _check_tls_range(tls_version, tls_version_max):
         raise ValueError("tls_version must be less than or equal to tls_version_max")
 
 
+def _check_ip_version(value):
+    assert isinstance(value, str), "ip_version must be string"
+    assert value in _IP_VERSIONS, "ip_version must be one of 'any', '4', '6'"
+
+
 class Client:
     """RedC client for making HTTP requests"""
 
@@ -41,6 +47,8 @@ class Client:
         http_version: Literal["auto", "1", "1.1", "2", "3"] = "3",
         tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
         tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = "any",
         max_total_connections: int = 1024,
         max_host_connections: int = 64,
         max_idle_connections: int = 2048,
@@ -88,6 +96,15 @@ class Client:
             tls_version_max (``default`` | ``1.0`` | ``1.1`` | ``1.2`` | ``1.3``, *optional*):
                 Maximum TLS version. ``default`` leaves the cap to libcurl.
                 Default is ``default``
+
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                A hostname triggers a blocking DNS lookup. Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                Default is ``any``
 
             max_total_connections (``int``, *optional*):
                 The maximum number of active TCP connections allowed simultaneously.
@@ -172,6 +189,8 @@ class Client:
         _check_tls_version("tls_version", tls_version)
         _check_tls_version("tls_version_max", tls_version_max)
         _check_tls_range(tls_version, tls_version_max)
+        assert isinstance(interface, (str, type(None))), "interface must be string"
+        _check_ip_version(ip_version)
         assert isinstance(cert, (str, type(None))), "cert must be string"
         assert isinstance(timeout, tuple) and len(timeout) == 2, (
             "timeout must be a tuple of (total_timeout, connect_timeout)"
@@ -217,6 +236,8 @@ class Client:
         self.__default_http_version = http_version
         self.__default_tls_version = tls_version
         self.__default_tls_version_max = tls_version_max
+        self.__default_interface = interface or ""
+        self.__default_ip_version = ip_version
         self.__allowed_http_versions_set = set(self.allowed_http_versions)
         self.__empty_set = {"", None}
         self.__timeout = timeout
@@ -315,6 +336,8 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = None,
         auth: Union[tuple, str] = None,
         verify: bool = True,
         cert: str = None,
@@ -393,6 +416,16 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                When ``None``, uses the client-level default. ``""`` does not bind for this request.
+                Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                When ``None``, uses the client-level default. Default is ``None``
+
             auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
@@ -449,6 +482,16 @@ class Client:
 
         _check_tls_range(tls_version, tls_version_max)
 
+        if interface is None:
+            interface = self.__default_interface
+        else:
+            assert isinstance(interface, str), "interface must be string"
+
+        if ip_version is None:
+            ip_version = self.__default_ip_version
+        else:
+            _check_ip_version(ip_version)
+
         if json is not None:
             json = self.json_encoder(json)
             if headers is None:
@@ -487,6 +530,8 @@ class Client:
                 connect_timeout_ms=int(connect_timeout * 1000),
                 allow_redirects=allow_redirects,
                 proxy_url=proxy_url,
+                interface=interface,
+                ip_version=ip_version,
                 auth=auth,
                 verify=verify,
                 cert=cert or self.__cert,
@@ -510,6 +555,8 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
         cert: str = None,
@@ -561,6 +608,16 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                When ``None``, uses the client-level default. ``""`` does not bind for this request.
+                Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                When ``None``, uses the client-level default. Default is ``None``
+
             auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
@@ -600,6 +657,8 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            interface=interface,
+            ip_version=ip_version,
             auth=auth,
             verify=verify,
             cert=cert,
@@ -621,6 +680,8 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
         cert: str = None,
@@ -670,6 +731,16 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                When ``None``, uses the client-level default. ``""`` does not bind for this request.
+                Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                When ``None``, uses the client-level default. Default is ``None``
+
             auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
@@ -703,6 +774,8 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            interface=interface,
+            ip_version=ip_version,
             auth=auth,
             verify=verify,
             cert=cert,
@@ -725,6 +798,8 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
         cert: str = None,
@@ -804,6 +879,16 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                When ``None``, uses the client-level default. ``""`` does not bind for this request.
+                Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                When ``None``, uses the client-level default. Default is ``None``
+
             auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
@@ -846,6 +931,8 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            interface=interface,
+            ip_version=ip_version,
             auth=auth,
             verify=verify,
             cert=cert,
@@ -870,6 +957,8 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
         cert: str = None,
@@ -949,6 +1038,16 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                When ``None``, uses the client-level default. ``""`` does not bind for this request.
+                Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                When ``None``, uses the client-level default. Default is ``None``
+
             auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
@@ -991,6 +1090,8 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            interface=interface,
+            ip_version=ip_version,
             auth=auth,
             verify=verify,
             cert=cert,
@@ -1015,6 +1116,8 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
         cert: str = None,
@@ -1094,6 +1197,16 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                When ``None``, uses the client-level default. ``""`` does not bind for this request.
+                Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                When ``None``, uses the client-level default. Default is ``None``
+
             auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
@@ -1136,6 +1249,8 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            interface=interface,
+            ip_version=ip_version,
             auth=auth,
             verify=verify,
             cert=cert,
@@ -1157,6 +1272,8 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
         cert: str = None,
@@ -1208,6 +1325,16 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                When ``None``, uses the client-level default. ``""`` does not bind for this request.
+                Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                When ``None``, uses the client-level default. Default is ``None``
+
             auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
@@ -1247,6 +1374,8 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            interface=interface,
+            ip_version=ip_version,
             auth=auth,
             verify=verify,
             cert=cert,
@@ -1268,6 +1397,8 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        interface: str = None,
+        ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
         cert: str = None,
@@ -1317,6 +1448,16 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            interface (``str``, *optional*):
+                Local interface name or IP address for outgoing connections.
+                ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
+                When ``None``, uses the client-level default. ``""`` does not bind for this request.
+                Default is ``None``
+
+            ip_version (``any`` | ``4`` | ``6``, *optional*):
+                Which addresses of a hostname may be used. A numeric address in the URL is used as written.
+                When ``None``, uses the client-level default. Default is ``None``
+
             auth (``tuple`` | ``str``, *optional*):
                 A tuple of ``(username, password)`` or ``(username, password, type)`` for HTTP authentication or a string for Bearer authentication.
                 Supported types are: ``basic``, ``digest``, ``digest_ie``, ``ntlm`` and ``any``. Default is ``basic``
@@ -1350,6 +1491,8 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            interface=interface,
+            ip_version=ip_version,
             auth=auth,
             verify=verify,
             cert=cert,
