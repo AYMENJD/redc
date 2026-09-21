@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core >=0.10", "nanobind >=3.0.0"]
+requires = ["scikit-build-core >=1.0", "nanobind >=3.0.0"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -46,8 +46,9 @@ Tracker = "https://github.com/AYMENJD/redc/issues"
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"
 
-[tool.scikit-build.metadata.version]
+[[tool.dynamic-metadata]]
 provider = "scikit_build_core.metadata.regex"
+field = "version"
 input = "redc/_version.py"
 
 [tool.scikit-build.cmake.define]
