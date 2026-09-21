@@ -49,6 +49,7 @@ class Client:
         tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = "any",
+        no_proxy: str = None,
         max_total_connections: int = 1024,
         max_host_connections: int = 64,
         max_idle_connections: int = 2048,
@@ -105,6 +106,12 @@ class Client:
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 Default is ``any``
+
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip ``proxy_url`` and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. ``None`` leaves that variable in effect.
+                Default is ``None``
 
             max_total_connections (``int``, *optional*):
                 The maximum number of active TCP connections allowed simultaneously.
@@ -191,6 +198,7 @@ class Client:
         _check_tls_range(tls_version, tls_version_max)
         assert isinstance(interface, (str, type(None))), "interface must be string"
         _check_ip_version(ip_version)
+        assert isinstance(no_proxy, (str, type(None))), "no_proxy must be string"
         assert isinstance(cert, (str, type(None))), "cert must be string"
         assert isinstance(timeout, tuple) and len(timeout) == 2, (
             "timeout must be a tuple of (total_timeout, connect_timeout)"
@@ -238,6 +246,7 @@ class Client:
         self.__default_tls_version_max = tls_version_max
         self.__default_interface = interface or ""
         self.__default_ip_version = ip_version
+        self.__default_no_proxy = no_proxy
         self.__allowed_http_versions_set = set(self.allowed_http_versions)
         self.__empty_set = {"", None}
         self.__timeout = timeout
@@ -336,6 +345,7 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        no_proxy: str = None,
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         auth: Union[tuple, str] = None,
@@ -416,6 +426,12 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip the proxy and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. When ``None``, uses the client-level default.
+                Default is ``None``
+
             interface (``str``, *optional*):
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
@@ -492,6 +508,11 @@ class Client:
         else:
             _check_ip_version(ip_version)
 
+        if no_proxy is None:
+            no_proxy = self.__default_no_proxy
+        else:
+            assert isinstance(no_proxy, str), "no_proxy must be string"
+
         if json is not None:
             json = self.json_encoder(json)
             if headers is None:
@@ -530,6 +551,8 @@ class Client:
                 connect_timeout_ms=int(connect_timeout * 1000),
                 allow_redirects=allow_redirects,
                 proxy_url=proxy_url,
+                no_proxy="" if no_proxy is None else no_proxy,
+                no_proxy_set=no_proxy is not None,
                 interface=interface,
                 ip_version=ip_version,
                 auth=auth,
@@ -555,6 +578,7 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        no_proxy: str = None,
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
@@ -608,6 +632,12 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip the proxy and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. When ``None``, uses the client-level default.
+                Default is ``None``
+
             interface (``str``, *optional*):
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
@@ -657,6 +687,7 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            no_proxy=no_proxy,
             interface=interface,
             ip_version=ip_version,
             auth=auth,
@@ -680,6 +711,7 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        no_proxy: str = None,
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
@@ -731,6 +763,12 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip the proxy and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. When ``None``, uses the client-level default.
+                Default is ``None``
+
             interface (``str``, *optional*):
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
@@ -774,6 +812,7 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            no_proxy=no_proxy,
             interface=interface,
             ip_version=ip_version,
             auth=auth,
@@ -798,6 +837,7 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        no_proxy: str = None,
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
@@ -879,6 +919,12 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip the proxy and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. When ``None``, uses the client-level default.
+                Default is ``None``
+
             interface (``str``, *optional*):
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
@@ -931,6 +977,7 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            no_proxy=no_proxy,
             interface=interface,
             ip_version=ip_version,
             auth=auth,
@@ -957,6 +1004,7 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        no_proxy: str = None,
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
@@ -1038,6 +1086,12 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip the proxy and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. When ``None``, uses the client-level default.
+                Default is ``None``
+
             interface (``str``, *optional*):
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
@@ -1090,6 +1144,7 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            no_proxy=no_proxy,
             interface=interface,
             ip_version=ip_version,
             auth=auth,
@@ -1116,6 +1171,7 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        no_proxy: str = None,
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
@@ -1197,6 +1253,12 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip the proxy and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. When ``None``, uses the client-level default.
+                Default is ``None``
+
             interface (``str``, *optional*):
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
@@ -1249,6 +1311,7 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            no_proxy=no_proxy,
             interface=interface,
             ip_version=ip_version,
             auth=auth,
@@ -1272,6 +1335,7 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        no_proxy: str = None,
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
@@ -1325,6 +1389,12 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip the proxy and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. When ``None``, uses the client-level default.
+                Default is ``None``
+
             interface (``str``, *optional*):
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
@@ -1374,6 +1444,7 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            no_proxy=no_proxy,
             interface=interface,
             ip_version=ip_version,
             auth=auth,
@@ -1397,6 +1468,7 @@ class Client:
         timeout: tuple = None,
         allow_redirects: Union[bool, int] = True,
         proxy_url: str = "",
+        no_proxy: str = None,
         interface: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
@@ -1448,6 +1520,12 @@ class Client:
             proxy_url (``str``, *optional*):
                 The proxy server URL to use for the request (e.g., ``http://user:pass@host:port``).
 
+            no_proxy (``str``, *optional*):
+                Comma-separated hosts that skip the proxy and connect directly.
+                ``*`` skips the proxy for every host. ``""`` proxies every host and ignores
+                the ``no_proxy`` environment variable. When ``None``, uses the client-level default.
+                Default is ``None``
+
             interface (``str``, *optional*):
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
@@ -1491,6 +1569,7 @@ class Client:
             timeout=timeout,
             allow_redirects=allow_redirects,
             proxy_url=proxy_url,
+            no_proxy=no_proxy,
             interface=interface,
             ip_version=ip_version,
             auth=auth,

@@ -152,6 +152,7 @@ public:
                     const char *ssl_version_max, const long &timeout_ms,
                     const long &connect_timeout_ms,
                     const py_object &allow_redirects, const char *proxy_url,
+                    const char *no_proxy, const bool &no_proxy_set,
                     const char *interface_name, const char *ip_version,
                     const py_object &auth, const bool &verify, const char *cert,
                     const py_object &stream_callback,
