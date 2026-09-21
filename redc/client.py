@@ -48,6 +48,7 @@ class Client:
         tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
         tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = "any",
         no_proxy: str = None,
         max_total_connections: int = 1024,
@@ -102,6 +103,10 @@ class Client:
                 Local interface name or IP address for outgoing connections.
                 ``if!``, ``host!``, and ``ifhost!`` prefixes are passed through to libcurl.
                 A hostname triggers a blocking DNS lookup. Default is ``None``
+
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                The URL still supplies the request path and ``Host`` header. Default is ``None``
 
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
@@ -197,6 +202,7 @@ class Client:
         _check_tls_version("tls_version_max", tls_version_max)
         _check_tls_range(tls_version, tls_version_max)
         assert isinstance(interface, (str, type(None))), "interface must be string"
+        assert isinstance(unix_socket, (str, type(None))), "unix_socket must be string"
         _check_ip_version(ip_version)
         assert isinstance(no_proxy, (str, type(None))), "no_proxy must be string"
         assert isinstance(cert, (str, type(None))), "cert must be string"
@@ -245,6 +251,7 @@ class Client:
         self.__default_tls_version = tls_version
         self.__default_tls_version_max = tls_version_max
         self.__default_interface = interface or ""
+        self.__default_unix_socket = unix_socket or ""
         self.__default_ip_version = ip_version
         self.__default_no_proxy = no_proxy
         self.__allowed_http_versions_set = set(self.allowed_http_versions)
@@ -347,6 +354,7 @@ class Client:
         proxy_url: str = "",
         no_proxy: str = None,
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         auth: Union[tuple, str] = None,
         verify: bool = True,
@@ -438,6 +446,11 @@ class Client:
                 When ``None``, uses the client-level default. ``""`` does not bind for this request.
                 Default is ``None``
 
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                When ``None``, uses the client-level default. ``""`` uses a normal TCP connection.
+                Default is ``None``
+
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 When ``None``, uses the client-level default. Default is ``None``
@@ -503,6 +516,11 @@ class Client:
         else:
             assert isinstance(interface, str), "interface must be string"
 
+        if unix_socket is None:
+            unix_socket = self.__default_unix_socket
+        else:
+            assert isinstance(unix_socket, str), "unix_socket must be string"
+
         if ip_version is None:
             ip_version = self.__default_ip_version
         else:
@@ -554,6 +572,7 @@ class Client:
                 no_proxy="" if no_proxy is None else no_proxy,
                 no_proxy_set=no_proxy is not None,
                 interface=interface,
+                unix_socket=unix_socket,
                 ip_version=ip_version,
                 auth=auth,
                 verify=verify,
@@ -580,6 +599,7 @@ class Client:
         proxy_url: str = "",
         no_proxy: str = None,
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -644,6 +664,11 @@ class Client:
                 When ``None``, uses the client-level default. ``""`` does not bind for this request.
                 Default is ``None``
 
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                When ``None``, uses the client-level default. ``""`` uses a normal TCP connection.
+                Default is ``None``
+
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 When ``None``, uses the client-level default. Default is ``None``
@@ -689,6 +714,7 @@ class Client:
             proxy_url=proxy_url,
             no_proxy=no_proxy,
             interface=interface,
+            unix_socket=unix_socket,
             ip_version=ip_version,
             auth=auth,
             verify=verify,
@@ -713,6 +739,7 @@ class Client:
         proxy_url: str = "",
         no_proxy: str = None,
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -775,6 +802,11 @@ class Client:
                 When ``None``, uses the client-level default. ``""`` does not bind for this request.
                 Default is ``None``
 
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                When ``None``, uses the client-level default. ``""`` uses a normal TCP connection.
+                Default is ``None``
+
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 When ``None``, uses the client-level default. Default is ``None``
@@ -814,6 +846,7 @@ class Client:
             proxy_url=proxy_url,
             no_proxy=no_proxy,
             interface=interface,
+            unix_socket=unix_socket,
             ip_version=ip_version,
             auth=auth,
             verify=verify,
@@ -839,6 +872,7 @@ class Client:
         proxy_url: str = "",
         no_proxy: str = None,
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -931,6 +965,11 @@ class Client:
                 When ``None``, uses the client-level default. ``""`` does not bind for this request.
                 Default is ``None``
 
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                When ``None``, uses the client-level default. ``""`` uses a normal TCP connection.
+                Default is ``None``
+
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 When ``None``, uses the client-level default. Default is ``None``
@@ -979,6 +1018,7 @@ class Client:
             proxy_url=proxy_url,
             no_proxy=no_proxy,
             interface=interface,
+            unix_socket=unix_socket,
             ip_version=ip_version,
             auth=auth,
             verify=verify,
@@ -1006,6 +1046,7 @@ class Client:
         proxy_url: str = "",
         no_proxy: str = None,
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -1098,6 +1139,11 @@ class Client:
                 When ``None``, uses the client-level default. ``""`` does not bind for this request.
                 Default is ``None``
 
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                When ``None``, uses the client-level default. ``""`` uses a normal TCP connection.
+                Default is ``None``
+
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 When ``None``, uses the client-level default. Default is ``None``
@@ -1146,6 +1192,7 @@ class Client:
             proxy_url=proxy_url,
             no_proxy=no_proxy,
             interface=interface,
+            unix_socket=unix_socket,
             ip_version=ip_version,
             auth=auth,
             verify=verify,
@@ -1173,6 +1220,7 @@ class Client:
         proxy_url: str = "",
         no_proxy: str = None,
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -1265,6 +1313,11 @@ class Client:
                 When ``None``, uses the client-level default. ``""`` does not bind for this request.
                 Default is ``None``
 
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                When ``None``, uses the client-level default. ``""`` uses a normal TCP connection.
+                Default is ``None``
+
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 When ``None``, uses the client-level default. Default is ``None``
@@ -1313,6 +1366,7 @@ class Client:
             proxy_url=proxy_url,
             no_proxy=no_proxy,
             interface=interface,
+            unix_socket=unix_socket,
             ip_version=ip_version,
             auth=auth,
             verify=verify,
@@ -1337,6 +1391,7 @@ class Client:
         proxy_url: str = "",
         no_proxy: str = None,
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -1401,6 +1456,11 @@ class Client:
                 When ``None``, uses the client-level default. ``""`` does not bind for this request.
                 Default is ``None``
 
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                When ``None``, uses the client-level default. ``""`` uses a normal TCP connection.
+                Default is ``None``
+
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 When ``None``, uses the client-level default. Default is ``None``
@@ -1446,6 +1506,7 @@ class Client:
             proxy_url=proxy_url,
             no_proxy=no_proxy,
             interface=interface,
+            unix_socket=unix_socket,
             ip_version=ip_version,
             auth=auth,
             verify=verify,
@@ -1470,6 +1531,7 @@ class Client:
         proxy_url: str = "",
         no_proxy: str = None,
         interface: str = None,
+        unix_socket: str = None,
         ip_version: Literal["any", "4", "6"] = None,
         verify: bool = True,
         auth: Union[tuple, str] = None,
@@ -1532,6 +1594,11 @@ class Client:
                 When ``None``, uses the client-level default. ``""`` does not bind for this request.
                 Default is ``None``
 
+            unix_socket (``str``, *optional*):
+                Path of a Unix domain socket to connect to instead of the host in the URL.
+                When ``None``, uses the client-level default. ``""`` uses a normal TCP connection.
+                Default is ``None``
+
             ip_version (``any`` | ``4`` | ``6``, *optional*):
                 Which addresses of a hostname may be used. A numeric address in the URL is used as written.
                 When ``None``, uses the client-level default. Default is ``None``
@@ -1571,6 +1638,7 @@ class Client:
             proxy_url=proxy_url,
             no_proxy=no_proxy,
             interface=interface,
+            unix_socket=unix_socket,
             ip_version=ip_version,
             auth=auth,
             verify=verify,

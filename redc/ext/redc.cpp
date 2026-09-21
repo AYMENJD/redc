@@ -685,7 +685,8 @@ py_object RedC::request(const char *method, const char *url,
                         const long &connect_timeout_ms,
                         const py_object &allow_redirects, const char *proxy_url,
                         const char *no_proxy, const bool &no_proxy_set,
-                        const char *interface_name, const char *ip_version,
+                        const char *interface_name, const char *unix_socket,
+                        const char *ip_version,
                         const py_object &auth, const bool &verify,
                         const char *cert, const py_object &stream_callback,
                         const py_object &progress_callback, const bool &verbose,
@@ -782,6 +783,9 @@ py_object RedC::request(const char *method, const char *url,
     }
     if (!isNullOrEmpty(interface_name)) {
       curl_easy_setopt(easy, CURLOPT_INTERFACE, interface_name);
+    }
+    if (!isNullOrEmpty(unix_socket)) {
+      curl_easy_setopt(easy, CURLOPT_UNIX_SOCKET_PATH, unix_socket);
     }
     curl_easy_setopt(easy, CURLOPT_IPRESOLVE, ip_resolve_value(ip_version));
 
@@ -1278,7 +1282,8 @@ NB_MODULE(redc_ext, m) {
            arg("connect_timeout_ms") = 0, arg("allow_redirects") = true,
            arg("proxy_url") = "", arg("no_proxy") = "",
            arg("no_proxy_set") = false, arg("interface") = "",
-           arg("ip_version") = "any", arg("auth") = nb::none(),
+           arg("unix_socket") = "", arg("ip_version") = "any",
+           arg("auth") = nb::none(),
            arg("verify") = true, arg("cert") = "",
            arg("stream_callback") = nb::none(),
            arg("progress_callback") = nb::none(), arg("verbose") = false,
