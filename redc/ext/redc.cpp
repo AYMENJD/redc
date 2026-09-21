@@ -612,7 +612,10 @@ void RedC::process_completed_transfers() {
 Result RedC::create_result(CURL *easy, CURLcode curl_code,
                            std::unique_ptr<Request> req) {
   long response_code = -1, http_version = 0, redirect_count = 0;
+  long primary_port = 0, local_port = 0;
   char *url = nullptr;
+  char *primary_ip = nullptr;
+  char *local_ip = nullptr;
 
   curl_off_t dns_time = 0, connect_time = 0, tls_time = 0, download_size = 0,
              download_speed = 0, upload_size = 0, upload_speed = 0, elapsed = 0;
@@ -621,6 +624,10 @@ Result RedC::create_result(CURL *easy, CURLcode curl_code,
     curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &response_code);
     curl_easy_getinfo(easy, CURLINFO_EFFECTIVE_URL, &url);
     curl_easy_getinfo(easy, CURLINFO_HTTP_VERSION, &http_version);
+    curl_easy_getinfo(easy, CURLINFO_PRIMARY_IP, &primary_ip);
+    curl_easy_getinfo(easy, CURLINFO_PRIMARY_PORT, &primary_port);
+    curl_easy_getinfo(easy, CURLINFO_LOCAL_IP, &local_ip);
+    curl_easy_getinfo(easy, CURLINFO_LOCAL_PORT, &local_port);
     curl_easy_getinfo(easy, CURLINFO_REDIRECT_COUNT, &redirect_count);
 
     curl_easy_getinfo(easy, CURLINFO_NAMELOOKUP_TIME_T, &dns_time);
@@ -634,10 +641,24 @@ Result RedC::create_result(CURL *easy, CURLcode curl_code,
   }
 
   return Result{
-      std::move(req), curl_code,      response_code,  string(url ? url : ""),
-      http_version,   redirect_count, dns_time,       connect_time,
-      tls_time,       download_size,  download_speed, upload_size,
-      upload_speed,   elapsed,
+      std::move(req),
+      curl_code,
+      response_code,
+      string(url ? url : ""),
+      http_version,
+      string(primary_ip ? primary_ip : ""),
+      primary_port,
+      string(local_ip ? local_ip : ""),
+      local_port,
+      redirect_count,
+      dns_time,
+      connect_time,
+      tls_time,
+      download_size,
+      download_speed,
+      upload_size,
+      upload_speed,
+      elapsed,
   };
 }
 
@@ -661,8 +682,9 @@ static py_tuple make_result_tuple(const Result &r) {
                                     r.request->verbose_output.size());
 
   return nb::make_tuple(status_code, headers, body, r.url,
-                        get_http_version_from_bit(r.http_version),
-                        r.redirect_count, r.dns_time, r.connect_time,
+                        get_http_version_from_bit(r.http_version), r.primary_ip,
+                        r.primary_port, r.local_ip, r.local_port, r.redirect_count,
+                        r.dns_time, r.connect_time,
                         r.tls_time, r.download_size, r.download_speed,
                         r.upload_size, r.upload_speed, r.elapsed,
                         static_cast<int>(r.curl_code), curl_error, verbose_out);

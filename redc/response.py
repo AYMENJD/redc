@@ -14,6 +14,10 @@ class Response:
         response: bytes,
         url: str,
         http_version: str,
+        primary_ip: str,
+        primary_port: int,
+        local_ip: str,
+        local_port: int,
         redirect_count: int,
         dns_time: int,
         connect_time: int,
@@ -54,6 +58,16 @@ class Response:
 
         self.http_version = http_version
         """Used HTTP version"""
+
+        self.primary_ip = primary_ip
+        """IP address of the host this request connected to"""
+        self.primary_port = primary_port
+        """Port of the host this request connected to"""
+        self.local_ip = local_ip
+        """Local IP address used for this connection"""
+        self.local_port = local_port
+        """Local port used for this connection"""
+
         self.redirect_count = redirect_count
         """Number of redirects followed"""
 

@@ -107,6 +107,10 @@ struct Result {
   long response_code;
   string url;
   long http_version;
+  string primary_ip;
+  long primary_port;
+  string local_ip;
+  long local_port;
   long redirect_count;
 
   curl_off_t dns_time;
