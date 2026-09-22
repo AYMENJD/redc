@@ -617,8 +617,9 @@ Result RedC::create_result(CURL *easy, CURLcode curl_code,
   char *primary_ip = nullptr;
   char *local_ip = nullptr;
 
-  curl_off_t dns_time = 0, connect_time = 0, tls_time = 0, download_size = 0,
-             download_speed = 0, upload_size = 0, upload_speed = 0, elapsed = 0;
+  curl_off_t dns_time = 0, connect_time = 0, tls_time = 0, starttransfer_time = 0,
+             redirect_time = 0, download_size = 0, download_speed = 0,
+             upload_size = 0, upload_speed = 0, elapsed = 0;
 
   if (curl_code == CURLE_OK) {
     curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &response_code);
@@ -633,6 +634,8 @@ Result RedC::create_result(CURL *easy, CURLcode curl_code,
     curl_easy_getinfo(easy, CURLINFO_NAMELOOKUP_TIME_T, &dns_time);
     curl_easy_getinfo(easy, CURLINFO_CONNECT_TIME_T, &connect_time);
     curl_easy_getinfo(easy, CURLINFO_APPCONNECT_TIME_T, &tls_time);
+    curl_easy_getinfo(easy, CURLINFO_STARTTRANSFER_TIME_T, &starttransfer_time);
+    curl_easy_getinfo(easy, CURLINFO_REDIRECT_TIME_T, &redirect_time);
     curl_easy_getinfo(easy, CURLINFO_SIZE_DOWNLOAD_T, &download_size);
     curl_easy_getinfo(easy, CURLINFO_SPEED_DOWNLOAD_T, &download_speed);
     curl_easy_getinfo(easy, CURLINFO_SIZE_UPLOAD_T, &upload_size);
@@ -654,6 +657,8 @@ Result RedC::create_result(CURL *easy, CURLcode curl_code,
       dns_time,
       connect_time,
       tls_time,
+      starttransfer_time,
+      redirect_time,
       download_size,
       download_speed,
       upload_size,
@@ -684,8 +689,9 @@ static py_tuple make_result_tuple(const Result &r) {
   return nb::make_tuple(status_code, headers, body, r.url,
                         get_http_version_from_bit(r.http_version), r.primary_ip,
                         r.primary_port, r.local_ip, r.local_port, r.redirect_count,
-                        r.dns_time, r.connect_time,
-                        r.tls_time, r.download_size, r.download_speed,
+                        r.dns_time, r.connect_time, r.tls_time,
+                        r.starttransfer_time, r.redirect_time, r.download_size,
+                        r.download_speed,
                         r.upload_size, r.upload_speed, r.elapsed,
                         static_cast<int>(r.curl_code), curl_error, verbose_out);
 }

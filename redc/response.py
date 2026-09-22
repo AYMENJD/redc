@@ -22,6 +22,8 @@ class Response:
         dns_time: int,
         connect_time: int,
         tls_time: int,
+        first_byte_time: int,
+        redirect_time: int,
         download_size: int,
         download_speed: int,
         upload_size: int,
@@ -82,6 +84,12 @@ class Response:
         )
         """TLS handshake time in microseconds"""
 
+        self.first_byte_time_us = first_byte_time
+        """Time until the first response byte, in microseconds, from the start of the transfer"""
+
+        self.redirect_time_us = redirect_time
+        """Time spent following redirects before the final transfer, in microseconds"""
+
         self.download_size = download_size
         """Total number of bytes downloaded"""
 
@@ -124,6 +132,18 @@ class Response:
         """TLS handshake time in seconds"""
 
         return self.tls_time_us / 1_000_000
+
+    @property
+    def first_byte_time(self) -> float:
+        """Time until the first response byte, in seconds, from the start of the transfer"""
+
+        return self.first_byte_time_us / 1_000_000
+
+    @property
+    def redirect_time(self) -> float:
+        """Time spent following redirects before the final transfer, in seconds"""
+
+        return self.redirect_time_us / 1_000_000
 
     @property
     def elapsed(self) -> float:

@@ -116,6 +116,8 @@ struct Result {
   curl_off_t dns_time;
   curl_off_t connect_time;
   curl_off_t tls_time;
+  curl_off_t starttransfer_time;
+  curl_off_t redirect_time;
   curl_off_t download_size;
   curl_off_t download_speed;
   curl_off_t upload_size;
