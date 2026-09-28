@@ -4,7 +4,8 @@ on:
   push:
     branches:
       - "main"
-
+    tags:
+      - "v*"
     paths:
       - "redc/_version.py"
 
