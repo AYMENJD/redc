@@ -13,29 +13,76 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 1
-
-      - name: Read versions
-        id: ver
-        run: |
-          python - << 'PY'
-          import os
-          import re
-          from pathlib import Path
-
-          text = Path("redc/_version.py").read_text()
-          redc = re.search(r'__version__\s*=\s*"([^"]+)"', text).group(1)
-          curl = re.search(r'CURL_VERSION\s*=\s*"([^"]+)"', text).group(1)
-          out = Path(os.environ["GITHUB_OUTPUT"])
-          with out.open("a") as fh:
-              fh.write(f"title=RedC v{redc} ~ Curl v{curl}\n")
-          PY
+          fetch-depth: 0
 
       - name: Create draft release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
         run: |
+          python - << 'PY'
+          import os
+          import re
+          import subprocess
+          from pathlib import Path
+
+          text = Path("redc/_version.py").read_text()
+          curl = re.search(r'CURL_VERSION\s*=\s*"([^"]+)"', text).group(1)
+          repo = os.environ["REPO"]
+
+          # The tag sits on its own line at the end of the message: "#fix".
+          SECTIONS = {
+              "feat": "Features",
+              "feature": "Features",
+              "fix": "Bug fix",
+              "bug": "Bug fix",
+              "bugfix": "Bug fix",
+              "perf": "Performance",
+              "docs": "Documentation",
+              "doc": "Documentation",
+              "test": "Tests",
+              "tests": "Tests",
+              "refactor": "Refactor",
+              "build": "Build",
+              "ci": "Build",
+          }
+          ORDER = ["Features", "Bug fix", "Performance", "Refactor", "Documentation", "Tests", "Build"]
+          TAG = re.compile(r"^#([A-Za-z][\w-]*)$", re.MULTILINE)
+          prev = subprocess.run(
+              ["git", "describe", "--tags", "--abbrev=0", "HEAD^"],
+              capture_output=True,
+              text=True,
+          )
+          revision = f"{prev.stdout.strip()}..HEAD" if prev.returncode == 0 else "HEAD"
+          raw = subprocess.check_output(
+              ["git", "log", "--reverse", revision, "--pretty=format:%H%x1f%h%x1f%s%x1f%b%x1e"],
+              text=True,
+          )
+
+          grouped = {}
+          for record in raw.split("\x1e"):
+              record = record.strip("\n")
+              if not record.strip():
+                  continue
+              full, short, subject, body = (record.split("\x1f") + ["", "", ""])[:4]
+              subject = subject.strip()
+              tags = TAG.findall(body)
+              if not tags:
+                  continue
+              tag = tags[-1].lower()
+              section = SECTIONS.get(tag, tag[:1].upper() + tag[1:])
+              link = f"https://github.com/{repo}/commit/{full}"
+              grouped.setdefault(section, []).append(f"- {subject} ([{short}]({link}))")
+
+          ordered = [name for name in ORDER if name in grouped]
+          ordered += sorted(name for name in grouped if name not in ORDER)
+
+          body = f"This release uses [Curl v{curl}](https://curl.se/ch/{curl}.html).\n"
+          for name in ordered:
+              body += f"\n## {name}\n\n" + "\n".join(grouped[name]) + "\n"
+          Path("release-notes.md").write_text(body)
+          PY
           gh release create "${{ github.ref_name }}" \
             --draft \
-            --title "${{ steps.ver.outputs.title }}" \
-            --notes ""
+            --title "${{ github.ref_name }}" \
+            --notes-file release-notes.md
