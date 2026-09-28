@@ -6,7 +6,7 @@ if(POLICY CMP0065)
   cmake_policy(SET CMP0065 NEW)
 endif()
 
-project(redc VERSION 0.1.0 LANGUAGES CXX C)
+project(redc VERSION 1.0.0 LANGUAGES CXX C)
 
 if(NOT DEFINED CMAKE_MODULE_PATH)
   set(CMAKE_MODULE_PATH "")
