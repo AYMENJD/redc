@@ -8,7 +8,7 @@ Async HTTP client for Python with **native libcurl** performance.
 [![Curl version](https://img.shields.io/badge/Curl-v8.22.0-red?logo=curl)](https://curl.se/ch/8.22.0.html)
 [![Build status](https://img.shields.io/github/actions/workflow/status/AYMENJD/redc/build_wheels.yml?label=CI+wheels&logo=github)](https://github.com/AYMENJD/redc/actions)
 [![Python versions](https://img.shields.io/pypi/pyversions/redc?style=flat&logo=python)](https://www.python.org)
-[![Docs](https://img.shields.io/badge/Documentation-229ED9?style=flat)](https://red-c.pages.dev)
+[![Documentation](https://img.shields.io/badge/Documentation-red?style=flat)](https://red-c.pages.dev)
 [![Downloads](https://img.shields.io/pepy/dt/RedC?style=flat&logo=pypi)](https://pypi.org/project/RedC)
 [![Support with TON](https://img.shields.io/badge/Support%20with-TON-0098EA?style=for-the-badge&logo=ton)](https://cupofton.pages.dev/donate?a=UQCeySURtYxvqF2jNXlsFrXuTEqPjJhGx8uoev6tUbD_HELL&n=AYMEN&t=5&c=You+deserve+a+Cup+of+TON+for+RedC%2521)
 
