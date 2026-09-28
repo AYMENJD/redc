@@ -696,11 +696,32 @@ static py_tuple make_result_tuple(const Result &r) {
                         static_cast<int>(r.curl_code), curl_error, verbose_out);
 }
 
+static void set_future_exception(Request &request, nb::handle exc) {
+  try {
+    request.future_set_exception(exc);
+  } catch (nb::python_error &e) {
+    e.discard_as_unraisable("RedC.complete_request_future");
+  } catch (const std::exception &e) {
+    std::cerr << "RedC complete_request_future: " << e.what() << std::endl;
+  }
+}
+
 void RedC::complete_request_future(Result &req) {
   try {
     auto result = make_result_tuple(req);
     req.request->future_set_result(std::move(result));
+  } catch (nb::python_error &e) {
+    py_object exc = nb::borrow(e.value());
+    e.restore();
+    PyErr_Clear();
+    set_future_exception(*req.request, exc);
   } catch (const std::exception &e) {
+    py_object exc = nb::steal(PyObject_CallFunction(PyExc_RuntimeError, "s", e.what()));
+    set_future_exception(*req.request, exc);
+  } catch (...) {
+    py_object exc = nb::steal(PyObject_CallFunction(
+        PyExc_RuntimeError, "s", "unknown error while completing the request"));
+    set_future_exception(*req.request, exc);
   }
 }
 
