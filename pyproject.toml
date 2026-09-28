@@ -38,6 +38,7 @@ classifiers = [
 ]
 [project.optional-dependencies]
 test = ["pytest-asyncio", "waitress", "httpbin"]
+docs = ["properdocs>=1.6.7", "mkdocs-material", "mkdocstrings[python]"]
 
 [project.urls]
 Source = "https://github.com/AYMENJD/redc"
