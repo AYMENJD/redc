@@ -1,0 +1,41 @@
+name: Draft release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Read versions
+        id: ver
+        run: |
+          python - << 'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          text = Path("redc/_version.py").read_text()
+          redc = re.search(r'__version__\s*=\s*"([^"]+)"', text).group(1)
+          curl = re.search(r'CURL_VERSION\s*=\s*"([^"]+)"', text).group(1)
+          out = Path(os.environ["GITHUB_OUTPUT"])
+          with out.open("a") as fh:
+              fh.write(f"title=RedC v{redc} ~ Curl v{curl}\n")
+          PY
+
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --draft \
+            --title "${{ steps.ver.outputs.title }}" \
+            --notes ""
