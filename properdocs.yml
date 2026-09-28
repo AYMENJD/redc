@@ -1,0 +1,118 @@
+site_name: RedC
+site_url: https://redc.pages.dev
+site_description: Async HTTP client for Python.
+site_author: AYMEN
+repo_url: https://github.com/AYMENJD/redc
+repo_name: AYMENJD/redc
+edit_uri: ""
+copyright: Copyright &copy; 2025–2026 RedC
+
+theme:
+  name: material
+  font: false
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Light mode
+
+extra:
+  generator: false
+
+extra_css:
+  - stylesheets/extra.css
+
+watch:
+  - docs_social_hook.py
+
+hooks:
+  - docs_social_hook.py
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            force_inspection: true
+            extensions:
+              - docs/griffe_native.py:AttachNative
+              - docs/griffe_native.py:StripBuiltinDocs
+            docstring_style: google
+            docstring_options:
+              warnings: false
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            show_root_toc_entry: true
+            show_category_heading: true
+            merge_init_into_class: true
+            members_order: source
+            heading_level: 2
+            show_if_no_docstring: true
+            inherited_members: false
+            filters:
+              - "!^_"
+            separate_signature: true
+            signature_crossrefs: false
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+
+validation:
+  nav:
+    omitted_files: info
+    not_found: warn
+  links:
+    not_found: warn
+    anchors: warn
+    absolute_links: relative_to_docs
+    unrecognized_links: warn
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - Installation: getting-started/installation.md
+      - Quick start: getting-started/quickstart.md
+  - Guides:
+      - Client: guides/client.md
+      - Requests: guides/requests.md
+      - Response: guides/response.md
+      - TLS: guides/tls.md
+      - Connections: guides/connections.md
+      - Streaming: guides/streaming.md
+      - URL: guides/url.md
+      - Errors: guides/errors.md
+  - Examples: examples.md
+  - API reference: reference.md

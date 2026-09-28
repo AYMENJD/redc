@@ -1,0 +1,331 @@
+/* RedC docs. System type, the logo red, translucent chrome.
+   Tokens follow Material CSS variables:
+   https://squidfunk.github.io/mkdocs-material/setup/changing-the-colors/#custom-colors
+*/
+
+:root {
+  --md-text-font: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --md-code-font: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --rd-red: #d02e2c;
+  --rd-red-bright: #e04543;
+}
+
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--rd-red);
+  --md-primary-fg-color--light: #f0a3a2;
+  --md-primary-fg-color--dark: #9e221f;
+  --md-accent-fg-color: var(--rd-red);
+  --md-default-bg-color: #f5f5f7;
+  --md-default-fg-color: #1d1d1f;
+  --md-default-fg-color--light: #6e6e73;
+  --md-typeset-a-color: var(--rd-red);
+  --md-code-bg-color: rgba(0, 0, 0, 0.04);
+  --rd-header-bg: rgba(245, 245, 247, 0.72);
+  --md-footer-bg-color: var(--md-default-bg-color);
+  --md-footer-bg-color--dark: var(--md-default-bg-color);
+  --md-footer-fg-color: var(--md-default-fg-color);
+  --md-footer-fg-color--light: var(--md-default-fg-color--light);
+  --md-footer-fg-color--lighter: var(--md-default-fg-color--light);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--rd-red-bright);
+  --md-primary-fg-color--light: #f0a3a2;
+  --md-primary-fg-color--dark: #9e221f;
+  --md-accent-fg-color: var(--rd-red-bright);
+  --md-default-bg-color: #0b0b0d;
+  --md-default-fg-color: #f5f5f7;
+  --md-default-fg-color--light: #a1a1a6;
+  --md-typeset-a-color: var(--rd-red-bright);
+  --md-code-bg-color: rgba(255, 255, 255, 0.06);
+  --rd-header-bg: rgba(11, 11, 13, 0.72);
+  --md-footer-bg-color: var(--md-default-bg-color);
+  --md-footer-bg-color--dark: var(--md-default-bg-color);
+  --md-footer-fg-color: var(--md-default-fg-color);
+  --md-footer-fg-color--light: var(--md-default-fg-color--light);
+  --md-footer-fg-color--lighter: var(--md-default-fg-color--light);
+}
+
+.md-header {
+  background-color: var(--rd-header-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: none;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.12);
+  color: var(--md-default-fg-color);
+}
+
+.md-header .md-header__button,
+.md-header .md-header__topic,
+.md-header a,
+.md-header .md-source,
+.md-header .md-source__repository {
+  color: var(--md-default-fg-color);
+}
+
+@media screen and (min-width: 60em) {
+  .md-header .md-search__form {
+    background-color: rgba(128, 128, 128, 0.14);
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .md-header .md-search__form:hover {
+    background-color: rgba(128, 128, 128, 0.22);
+  }
+
+  .md-header .md-search__input {
+    color: var(--md-default-fg-color);
+    background: transparent;
+  }
+
+  .md-header .md-search__input::placeholder {
+    color: var(--md-default-fg-color--light);
+  }
+
+  .md-header .md-search__icon,
+  .md-header .md-search__input + .md-search__icon {
+    color: var(--md-default-fg-color--light);
+  }
+
+  [data-md-toggle="search"]:checked ~ .md-header .md-search__form {
+    background-color: var(--md-default-bg-color);
+    color: var(--md-default-fg-color);
+    border-radius: 8px 8px 0 0;
+  }
+}
+
+.md-header .md-header__button svg,
+.md-header .md-source svg {
+  fill: currentColor;
+}
+
+.md-tabs {
+  background-color: transparent;
+  color: var(--md-default-fg-color);
+}
+
+.md-tabs .md-tabs__link {
+  color: var(--md-default-fg-color);
+  opacity: 0.62;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.md-tabs .md-tabs__link:hover,
+.md-tabs .md-tabs__link:focus,
+.md-tabs .md-tabs__item--active .md-tabs__link {
+  color: var(--md-default-fg-color);
+  opacity: 1;
+}
+
+.md-sidebar {
+  background-color: transparent;
+}
+
+.md-nav__title {
+  font-weight: 600;
+}
+
+.md-content__inner {
+  padding-top: 1.75rem;
+  padding-bottom: 4rem;
+}
+
+.md-footer {
+  border-top: 1px solid rgba(128, 128, 128, 0.14);
+}
+
+.md-footer-meta {
+  background: transparent;
+}
+
+.md-typeset {
+  font-size: 0.9rem;
+  line-height: 1.7;
+  letter-spacing: 0;
+}
+
+.md-typeset > h1:first-child {
+  margin: 0.35rem 0 1.35rem;
+}
+
+.md-typeset h1 {
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+  color: var(--md-default-fg-color);
+}
+
+.md-typeset h2 {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin: 2.75rem 0 0.9rem;
+  padding-top: 0.35rem;
+  border: 0;
+}
+
+.md-typeset h3 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin: 2rem 0 0.7rem;
+}
+
+.md-typeset p,
+.md-typeset ul,
+.md-typeset ol {
+  margin: 0 0 1.15rem;
+}
+
+.md-typeset .highlight,
+.md-typeset pre,
+.md-typeset .admonition {
+  margin: 0.35rem 0 1.75rem;
+}
+
+.md-typeset code {
+  font-size: 0.85em;
+  border-radius: 4px;
+}
+
+.md-typeset .md-button {
+  border-radius: 980px;
+  padding: 0.5em 1.15em;
+  font-weight: 600;
+  transition: transform 100ms ease-out, opacity 100ms ease-out;
+}
+
+.md-typeset .md-button--primary {
+  color: #fff;
+}
+
+.md-typeset .md-button--primary:hover,
+.md-typeset .md-button--primary:focus {
+  color: #fff;
+}
+
+.md-typeset .md-button:active,
+.md-header__button:active,
+.md-clipboard:active {
+  transform: scale(0.97);
+}
+
+.hero {
+  padding: 3.5rem 0 3rem;
+  max-width: 40rem;
+}
+
+.hero h1 {
+  margin: 0 0 1.35rem;
+}
+
+.hero .wordmark {
+  width: min(15rem, 72vw);
+  height: auto;
+  display: block;
+}
+
+.hero .lede {
+  font-size: 1.15rem;
+  line-height: 1.5;
+  color: var(--md-default-fg-color--light);
+  letter-spacing: -0.01em;
+  margin: 0 0 2rem;
+}
+
+.hero .highlight {
+  margin: 0 0 1.75rem;
+}
+
+.hero .md-button {
+  margin: 0 0.6rem 0.5rem 0;
+}
+
+.home-map {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem 3.25rem;
+  margin: 0;
+  padding: 2.75rem 0 3rem;
+  border-top: 1px solid rgba(128, 128, 128, 0.14);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.14);
+}
+
+@media (min-width: 48em) {
+  .home-map {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+.home-map h2 {
+  font-size: 0.95rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  color: var(--md-default-fg-color);
+  margin: 0 0 0.45rem;
+  padding: 0;
+  border: 0;
+}
+
+.home-map h2 + p {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.88rem;
+  margin: 0 0 1rem;
+  line-height: 1.45;
+}
+
+.home-map p,
+.home-map li {
+  margin: 0 0 0.55rem;
+  line-height: 1.5;
+}
+
+.home-map p:last-child {
+  margin-bottom: 0;
+}
+
+.home-first {
+  padding: 0.5rem 0 2.75rem;
+  max-width: 42rem;
+}
+
+.home-first h2 {
+  margin-top: 0;
+}
+
+.md-typeset .admonition,
+.md-typeset details {
+  border-radius: 12px;
+}
+
+.md-typeset .doc-heading {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.md-typeset .doc-contents {
+  padding-left: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .md-typeset .md-button,
+  .md-header__button,
+  .md-clipboard {
+    transition: none;
+  }
+
+  .md-typeset .md-button:active,
+  .md-header__button:active,
+  .md-clipboard:active {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .md-header {
+    background-color: var(--md-default-bg-color);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
