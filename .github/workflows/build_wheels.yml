@@ -6,8 +6,6 @@ on:
       - "main"
     tags:
       - "v*"
-    paths:
-      - "redc/_version.py"
 
 env:
   USING_PYTHON_VERSION: '3.14.3'
