@@ -5,7 +5,7 @@ from typing import Callable
 class StreamCallback:
     """A class for creating a stream callback"""
 
-    def __init__(self, callback: Callable[[bytes, int], None]):
+    def __init__(self, callback: Callable[[bytes, int], None]) -> None:
         """A callback handler for streaming data
 
         Example:
@@ -25,7 +25,7 @@ class StreamCallback:
         self.callback = callback
         self._validate_callback()
 
-    def _validate_callback(self):
+    def _validate_callback(self) -> None:
         if inspect.iscoroutinefunction(self.callback):
             raise TypeError("Callback function cannot be asynchronous")
 
@@ -43,7 +43,7 @@ class StreamCallback:
 class ProgressCallback:
     """A class for creating a progress callback"""
 
-    def __init__(self, callback: Callable[[int, int, int, int], None]):
+    def __init__(self, callback: Callable[[int, int, int, int], None]) -> None:
         """A callback handler for progress updates
 
         Example:
@@ -67,7 +67,7 @@ class ProgressCallback:
         self.callback = callback
         self._validate_callback()
 
-    def _validate_callback(self):
+    def _validate_callback(self) -> None:
         if inspect.iscoroutinefunction(self.callback):
             raise TypeError("Callback function cannot be asynchronous")
 

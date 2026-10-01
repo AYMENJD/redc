@@ -1,12 +1,37 @@
+from __future__ import annotations
+
 from functools import lru_cache
-from typing import Union
+from typing import Any
 
 from .codes import HTTPStatus
 from .exceptions import HTTPError, exception_from_code
-from .utils import Headers, json_loads, parse_link_header
+from .utils import Headers, History, json_loads, parse_link_header
 
 
 class Response:
+    status_code: int
+    headers: Headers | None
+    history: list[History] | None
+    url: str
+    http_version: str
+    primary_ip: str
+    primary_port: int
+    local_ip: str
+    local_port: int
+    redirect_count: int
+    dns_time_us: int
+    connect_time_us: int
+    tls_time_us: int
+    first_byte_time_us: int
+    redirect_time_us: int
+    download_size: int
+    download_speed: int
+    upload_size: int
+    upload_speed: int
+    elapsed_us: int
+    curl_code: int
+    curl_error_message: str
+
     def __init__(
         self,
         status_code: int,
@@ -158,7 +183,7 @@ class Response:
 
     @property
     @lru_cache(1)
-    def links(self) -> Union[list[dict[str, str]], None]:
+    def links(self) -> list[dict[str, str]] | None:
         """Returns the parsed Link HTTP header
 
         Returns a list of dictionaries, where each dictionary contains the link
@@ -179,7 +204,7 @@ class Response:
         return HTTPStatus.get_description(self.status_code) or "Unknown"
 
     @property
-    def ok(self):
+    def ok(self) -> bool:
         """Checks if the request is successful and with no errors"""
         return bool(self)
 
@@ -243,7 +268,7 @@ class Response:
         return self.status_code in (301, 308)
 
     @property
-    def text(self) -> str:
+    def text(self) -> str | None:
         """Decodes the response content as a string using UTF-8
 
         Returns:
@@ -253,7 +278,7 @@ class Response:
         if self.status_code != -1:
             return self.__response.decode(encoding="utf-8")
 
-    def decode(self, encoding: str) -> str:
+    def decode(self, encoding: str) -> str | None:
         """Decodes the response content as a string using the specified encoding
 
         Parameters:
@@ -267,13 +292,13 @@ class Response:
         if self.status_code != -1:
             return self.__response.decode(encoding=encoding)
 
-    def json(self):
+    def json(self) -> Any:
         """Parses the response content as JSON"""
 
         if self.status_code != -1:
             return json_loads(self.__response)
 
-    def raise_for_status(self):
+    def raise_for_status(self) -> None:
         """Raises an :class:`redc.exceptions.HTTPError` or :class:`redc.exceptions.CurlError` if the response indicates an error"""
 
         if self.status_code == -1:
@@ -282,9 +307,11 @@ class Response:
         if 400 <= self.status_code <= 599:
             raise HTTPError(self.status_code, f"{self.status_code}: {self.reason}")
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.status_code != -1 and 200 <= self.status_code <= 299
 
     @classmethod
-    def from_result(cls, result, *, raise_for_status=False):
+    def from_result(
+        cls, result: tuple[Any, ...], *, raise_for_status: bool = False
+    ) -> Response:
         return cls(*result, raise_for_status=raise_for_status)

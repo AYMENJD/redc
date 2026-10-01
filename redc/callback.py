@@ -3,11 +3,11 @@ from typing import Callable
 
 
 class Callback:
-    def __init__(self, callback: Callable[[bytes, int], None]):
+    def __init__(self, callback: Callable[[bytes, int], None]) -> None:
         self.callback = callback
         self._validate_callback()
 
-    def _validate_callback(self):
+    def _validate_callback(self) -> None:
         signature = inspect.signature(self.callback)
 
         parameters = signature.parameters

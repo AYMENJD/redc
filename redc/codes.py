@@ -1,4 +1,4 @@
-status_descriptions = {
+status_descriptions: dict[int, str] = {
     # Informational (1xx)
     100: "Continue",
     101: "Switching Protocols",

@@ -6,15 +6,15 @@ except ImportError:
     except ImportError:
         import json
 
-from typing import Union
+from typing import Any
 
 JSON_ENCODER = json.__name__
 
 if JSON_ENCODER == "orjson":
 
     def json_dumps(
-        obj, encode: bool = True, null_terminated: bool = False
-    ) -> Union[str, bytes]:
+        obj: Any, encode: bool = True, null_terminated: bool = False
+    ) -> str | bytes:
         d = json.dumps(obj)
         if null_terminated:
             d += b"\0"
@@ -23,11 +23,11 @@ if JSON_ENCODER == "orjson":
 else:
 
     def json_dumps(
-        obj, encode: bool = True, null_terminated: bool = False
-    ) -> Union[str, bytes]:
+        obj: Any, encode: bool = True, null_terminated: bool = False
+    ) -> str | bytes:
         d = json.dumps(obj, separators=(",", ":"))
         return d if not encode else d.encode("utf-8")
 
 
-def json_loads(obj):
+def json_loads(obj: str | bytes | bytearray) -> Any:
     return json.loads(obj)

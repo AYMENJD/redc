@@ -98,12 +98,13 @@ class HTTPError(Exception):
     r"""HTTP request returned an unsuccessful status code"""
 
     status_code: int
+    response: object | None
 
     def __init__(
         self,
         status_code: int,
-        message: str = None,
-        response=None,
+        message: str | None = None,
+        response: object | None = None,
     ) -> None:
         self.status_code = int(status_code)
         self.response = response
@@ -138,7 +139,7 @@ class CurlError(Exception):
     code: int
     message: str
 
-    def __init__(self, message: str = None, code: int = None):
+    def __init__(self, message: str | None = None, code: int | None = None) -> None:
         if code is not None:
             self.code = code
 
@@ -153,7 +154,7 @@ class UnknownError(CurlError):
 
     message = "Unknown libcurl error"
 
-    def __init__(self, code: int, message: str = None):
+    def __init__(self, code: int, message: str | None = None) -> None:
         super().__init__(message=message, code=code)
 
 
@@ -855,7 +856,7 @@ __CODE_TO_EXCEPTION = {
 }
 
 
-def exception_from_code(code: int, message: str = None):
+def exception_from_code(code: int, message: str | None = None) -> CurlError | None:
     if code == 0:
         return None
 

@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import asyncio
 from functools import lru_cache
-from typing import BinaryIO, Callable, Literal, Union
+from types import TracebackType
+from typing import Any, BinaryIO, Callable, Literal, overload
 
 import trustifi
 
@@ -16,21 +19,21 @@ _SSL_RANK = {"1.0": 1, "1.1": 2, "1.2": 3, "1.3": 4}
 _IP_VERSIONS = ("any", "4", "6")
 
 
-def _check_tls_version(name, value):
+def _check_tls_version(name: str, value: str) -> None:
     assert isinstance(value, str), f"{name} must be string"
     assert value in _SSL_VERSIONS, (
         f"{name} must be one of 'default', '1.0', '1.1', '1.2', '1.3'"
     )
 
 
-def _check_tls_range(tls_version, tls_version_max):
+def _check_tls_range(tls_version: str, tls_version_max: str) -> None:
     if tls_version == "default" or tls_version_max == "default":
         return
     if _SSL_RANK[tls_version] > _SSL_RANK[tls_version_max]:
         raise ValueError("tls_version must be less than or equal to tls_version_max")
 
 
-def _check_ip_version(value):
+def _check_ip_version(value: str) -> None:
     assert isinstance(value, str), "ip_version must be string"
     assert value in _IP_VERSIONS, "ip_version must be one of 'any', '4', '6'"
 
@@ -40,17 +43,17 @@ class Client:
 
     def __init__(
         self,
-        base_url: str = None,
+        base_url: str | None = None,
         read_buffer_size: int = 16384,
-        headers: dict = None,
+        headers: dict[str, str | None] | None = None,
         persist_cookies: bool = False,
         http_version: Literal["auto", "1", "1.1", "2", "3"] = "3",
         tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
         tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = "default",
-        interface: str = None,
-        unix_socket: str = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
         ip_version: Literal["any", "4", "6"] = "any",
-        no_proxy: str = None,
+        no_proxy: str | None = None,
         max_total_connections: int = 1024,
         max_host_connections: int = 64,
         max_idle_connections: int = 2048,
@@ -58,13 +61,13 @@ class Client:
         pool_min_size: int = 16,
         pool_max_size: int = 512,
         backend: Literal["threaded", "asyncio"] = "asyncio",
-        timeout: tuple = (30.0, 0.0),
-        cert: str = None,
-        verbose: bool = None,
+        timeout: tuple[float, float] = (30.0, 0.0),
+        cert: str | None = None,
+        verbose: bool | None = None,
         raise_for_status: bool = False,
-        json_encoder: Callable[..., bytes] = json_dumps,
+        json_encoder: Callable[..., str | bytes] = json_dumps,
         keep_alive: bool = True,
-    ):
+    ) -> None:
         """
         Initialize the RedC client
 
@@ -274,14 +277,19 @@ class Client:
 
         self.__set_default_headers()
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> Client:
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         await self.close()
 
     @property
-    def is_running(self):
+    def is_running(self) -> bool:
         """Checks if RedC is currently running
 
         Returns:
@@ -291,7 +299,7 @@ class Client:
         return self.__redc_ext.is_running()
 
     @property
-    def default_headers(self):
+    def default_headers(self) -> Headers:
         """Returns default headers that are set on all requests"""
 
         return self.__default_headers
@@ -318,7 +326,13 @@ class Client:
                 cookies[name] = value
         return cookies
 
-    def get_cookies(self, netscape: bool = False) -> Union[list[dict], list[str]]:
+    @overload
+    def get_cookies(self, netscape: Literal[False] = False) -> list[dict[str, str | bool | int]]: ...
+
+    @overload
+    def get_cookies(self, netscape: Literal[True]) -> list[str]: ...
+
+    def get_cookies(self, netscape: bool = False) -> list[dict[str, str | bool | int]] | list[str]:
         """Retrieves currently stored session cookies
 
         Args:
@@ -340,30 +354,63 @@ class Client:
         self,
         method: str,
         url: str,
-        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        json=None,
-        data: Union[dict[str, str], BinaryIO] = None,
-        files: dict[str, str] = None,
-        headers: dict[str, str] = None,
-        cookies: dict[str, str] = None,
-        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
-        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        timeout: tuple = None,
-        allow_redirects: Union[bool, int] = True,
+        params: (
+            dict[str, str | list[str] | None]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | None
+        ) = None,
+        json: Any = None,
+        data: (
+            dict[str, str]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | BinaryIO
+            | None
+        ) = None,
+        files: (
+            dict[
+                str,
+                str
+                | bytes
+                | BinaryIO
+                | tuple[str, str | bytes | BinaryIO]
+                | tuple[str, str | bytes | BinaryIO, str]
+                | tuple[str, str | bytes | BinaryIO, str, dict[str, str]],
+            ]
+            | None
+        ) = None,
+        headers: dict[str | bytes, str | bytes | None] | None = None,
+        cookies: dict[str, str] | None = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] | None = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        timeout: tuple[float, float] | None = None,
+        allow_redirects: bool | int = True,
         proxy_url: str = "",
-        no_proxy: str = None,
-        interface: str = None,
-        unix_socket: str = None,
-        ip_version: Literal["any", "4", "6"] = None,
-        auth: Union[tuple, str] = None,
+        no_proxy: str | None = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
+        ip_version: Literal["any", "4", "6"] | None = None,
+        auth: (
+            tuple[str, str]
+            | tuple[
+                str, str, Literal["basic", "digest", "digest_ie", "ntlm", "any"]
+            ]
+            | str
+            | None
+        ) = None,
         verify: bool = True,
-        cert: str = None,
-        stream_callback: StreamCallback = None,
-        progress_callback: ProgressCallback = None,
+        cert: str | None = None,
+        stream_callback: StreamCallback | None = None,
+        progress_callback: ProgressCallback | None = None,
         verbose: bool = False,
-        keep_alive: bool = None,
-    ):
+        keep_alive: bool | None = None,
+    ) -> Response:
         """
         Make an HTTP request with the specified method and parameters
 
@@ -588,27 +635,41 @@ class Client:
     async def get(
         self,
         url: str,
-        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        headers: dict[str, str] = None,
-        cookies: dict[str, str] = None,
-        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
-        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        timeout: tuple = None,
-        allow_redirects: Union[bool, int] = True,
+        params: (
+            dict[str, str | list[str] | None]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | None
+        ) = None,
+        headers: dict[str | bytes, str | bytes | None] | None = None,
+        cookies: dict[str, str] | None = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] | None = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        timeout: tuple[float, float] | None = None,
+        allow_redirects: bool | int = True,
         proxy_url: str = "",
-        no_proxy: str = None,
-        interface: str = None,
-        unix_socket: str = None,
-        ip_version: Literal["any", "4", "6"] = None,
+        no_proxy: str | None = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
+        ip_version: Literal["any", "4", "6"] | None = None,
         verify: bool = True,
-        auth: Union[tuple, str] = None,
-        cert: str = None,
-        stream_callback: StreamCallback = None,
-        progress_callback: ProgressCallback = None,
+        auth: (
+            tuple[str, str]
+            | tuple[
+                str, str, Literal["basic", "digest", "digest_ie", "ntlm", "any"]
+            ]
+            | str
+            | None
+        ) = None,
+        cert: str | None = None,
+        stream_callback: StreamCallback | None = None,
+        progress_callback: ProgressCallback | None = None,
         verbose: bool = False,
-        keep_alive: bool = None,
-    ):
+        keep_alive: bool | None = None,
+    ) -> Response:
         """
         Make a GET request
 
@@ -728,25 +789,39 @@ class Client:
     async def head(
         self,
         url: str,
-        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        headers: dict[str, str] = None,
-        cookies: dict[str, str] = None,
-        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
-        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        timeout: tuple = None,
-        allow_redirects: Union[bool, int] = True,
+        params: (
+            dict[str, str | list[str] | None]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | None
+        ) = None,
+        headers: dict[str | bytes, str | bytes | None] | None = None,
+        cookies: dict[str, str] | None = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] | None = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        timeout: tuple[float, float] | None = None,
+        allow_redirects: bool | int = True,
         proxy_url: str = "",
-        no_proxy: str = None,
-        interface: str = None,
-        unix_socket: str = None,
-        ip_version: Literal["any", "4", "6"] = None,
+        no_proxy: str | None = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
+        ip_version: Literal["any", "4", "6"] | None = None,
         verify: bool = True,
-        auth: Union[tuple, str] = None,
-        cert: str = None,
+        auth: (
+            tuple[str, str]
+            | tuple[
+                str, str, Literal["basic", "digest", "digest_ie", "ntlm", "any"]
+            ]
+            | str
+            | None
+        ) = None,
+        cert: str | None = None,
         verbose: bool = False,
-        keep_alive: bool = None,
-    ):
+        keep_alive: bool | None = None,
+    ) -> Response:
         """
         Make a HEAD request
 
@@ -858,30 +933,63 @@ class Client:
     async def post(
         self,
         url: str,
-        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        json=None,
-        data: Union[dict[str, str], BinaryIO] = None,
-        files: dict[str, str] = None,
-        headers: dict[str, str] = None,
-        cookies: dict[str, str] = None,
-        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
-        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        timeout: tuple = None,
-        allow_redirects: Union[bool, int] = True,
+        params: (
+            dict[str, str | list[str] | None]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | None
+        ) = None,
+        json: Any = None,
+        data: (
+            dict[str, str]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | BinaryIO
+            | None
+        ) = None,
+        files: (
+            dict[
+                str,
+                str
+                | bytes
+                | BinaryIO
+                | tuple[str, str | bytes | BinaryIO]
+                | tuple[str, str | bytes | BinaryIO, str]
+                | tuple[str, str | bytes | BinaryIO, str, dict[str, str]],
+            ]
+            | None
+        ) = None,
+        headers: dict[str | bytes, str | bytes | None] | None = None,
+        cookies: dict[str, str] | None = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] | None = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        timeout: tuple[float, float] | None = None,
+        allow_redirects: bool | int = True,
         proxy_url: str = "",
-        no_proxy: str = None,
-        interface: str = None,
-        unix_socket: str = None,
-        ip_version: Literal["any", "4", "6"] = None,
+        no_proxy: str | None = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
+        ip_version: Literal["any", "4", "6"] | None = None,
         verify: bool = True,
-        auth: Union[tuple, str] = None,
-        cert: str = None,
-        stream_callback: StreamCallback = None,
-        progress_callback: ProgressCallback = None,
+        auth: (
+            tuple[str, str]
+            | tuple[
+                str, str, Literal["basic", "digest", "digest_ie", "ntlm", "any"]
+            ]
+            | str
+            | None
+        ) = None,
+        cert: str | None = None,
+        stream_callback: StreamCallback | None = None,
+        progress_callback: ProgressCallback | None = None,
         verbose: bool = False,
-        keep_alive: bool = None,
-    ):
+        keep_alive: bool | None = None,
+    ) -> Response:
         """
         Make a POST request
 
@@ -1032,30 +1140,63 @@ class Client:
     async def put(
         self,
         url: str,
-        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        json=None,
-        data: Union[dict[str, str], BinaryIO] = None,
-        files: dict[str, str] = None,
-        headers: dict[str, str] = None,
-        cookies: dict[str, str] = None,
-        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
-        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        timeout: tuple = None,
-        allow_redirects: Union[bool, int] = True,
+        params: (
+            dict[str, str | list[str] | None]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | None
+        ) = None,
+        json: Any = None,
+        data: (
+            dict[str, str]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | BinaryIO
+            | None
+        ) = None,
+        files: (
+            dict[
+                str,
+                str
+                | bytes
+                | BinaryIO
+                | tuple[str, str | bytes | BinaryIO]
+                | tuple[str, str | bytes | BinaryIO, str]
+                | tuple[str, str | bytes | BinaryIO, str, dict[str, str]],
+            ]
+            | None
+        ) = None,
+        headers: dict[str | bytes, str | bytes | None] | None = None,
+        cookies: dict[str, str] | None = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] | None = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        timeout: tuple[float, float] | None = None,
+        allow_redirects: bool | int = True,
         proxy_url: str = "",
-        no_proxy: str = None,
-        interface: str = None,
-        unix_socket: str = None,
-        ip_version: Literal["any", "4", "6"] = None,
+        no_proxy: str | None = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
+        ip_version: Literal["any", "4", "6"] | None = None,
         verify: bool = True,
-        auth: Union[tuple, str] = None,
-        cert: str = None,
-        stream_callback: StreamCallback = None,
-        progress_callback: ProgressCallback = None,
+        auth: (
+            tuple[str, str]
+            | tuple[
+                str, str, Literal["basic", "digest", "digest_ie", "ntlm", "any"]
+            ]
+            | str
+            | None
+        ) = None,
+        cert: str | None = None,
+        stream_callback: StreamCallback | None = None,
+        progress_callback: ProgressCallback | None = None,
         verbose: bool = False,
-        keep_alive: bool = None,
-    ):
+        keep_alive: bool | None = None,
+    ) -> Response:
         """
         Make a PUT request
 
@@ -1206,30 +1347,63 @@ class Client:
     async def patch(
         self,
         url: str,
-        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        json=None,
-        data: Union[dict[str, str], BinaryIO] = None,
-        files: dict[str, str] = None,
-        headers: dict[str, str] = None,
-        cookies: dict[str, str] = None,
-        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
-        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        timeout: tuple = None,
-        allow_redirects: Union[bool, int] = True,
+        params: (
+            dict[str, str | list[str] | None]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | None
+        ) = None,
+        json: Any = None,
+        data: (
+            dict[str, str]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | BinaryIO
+            | None
+        ) = None,
+        files: (
+            dict[
+                str,
+                str
+                | bytes
+                | BinaryIO
+                | tuple[str, str | bytes | BinaryIO]
+                | tuple[str, str | bytes | BinaryIO, str]
+                | tuple[str, str | bytes | BinaryIO, str, dict[str, str]],
+            ]
+            | None
+        ) = None,
+        headers: dict[str | bytes, str | bytes | None] | None = None,
+        cookies: dict[str, str] | None = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] | None = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        timeout: tuple[float, float] | None = None,
+        allow_redirects: bool | int = True,
         proxy_url: str = "",
-        no_proxy: str = None,
-        interface: str = None,
-        unix_socket: str = None,
-        ip_version: Literal["any", "4", "6"] = None,
+        no_proxy: str | None = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
+        ip_version: Literal["any", "4", "6"] | None = None,
         verify: bool = True,
-        auth: Union[tuple, str] = None,
-        cert: str = None,
-        stream_callback: StreamCallback = None,
-        progress_callback: ProgressCallback = None,
+        auth: (
+            tuple[str, str]
+            | tuple[
+                str, str, Literal["basic", "digest", "digest_ie", "ntlm", "any"]
+            ]
+            | str
+            | None
+        ) = None,
+        cert: str | None = None,
+        stream_callback: StreamCallback | None = None,
+        progress_callback: ProgressCallback | None = None,
         verbose: bool = False,
-        keep_alive: bool = None,
-    ):
+        keep_alive: bool | None = None,
+    ) -> Response:
         """
         Make a PATCH request
 
@@ -1380,27 +1554,41 @@ class Client:
     async def delete(
         self,
         url: str,
-        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        headers: dict[str, str] = None,
-        cookies: dict[str, str] = None,
-        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
-        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        timeout: tuple = None,
-        allow_redirects: Union[bool, int] = True,
+        params: (
+            dict[str, str | list[str] | None]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | None
+        ) = None,
+        headers: dict[str | bytes, str | bytes | None] | None = None,
+        cookies: dict[str, str] | None = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] | None = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        timeout: tuple[float, float] | None = None,
+        allow_redirects: bool | int = True,
         proxy_url: str = "",
-        no_proxy: str = None,
-        interface: str = None,
-        unix_socket: str = None,
-        ip_version: Literal["any", "4", "6"] = None,
+        no_proxy: str | None = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
+        ip_version: Literal["any", "4", "6"] | None = None,
         verify: bool = True,
-        auth: Union[tuple, str] = None,
-        cert: str = None,
-        stream_callback: StreamCallback = None,
-        progress_callback: ProgressCallback = None,
+        auth: (
+            tuple[str, str]
+            | tuple[
+                str, str, Literal["basic", "digest", "digest_ie", "ntlm", "any"]
+            ]
+            | str
+            | None
+        ) = None,
+        cert: str | None = None,
+        stream_callback: StreamCallback | None = None,
+        progress_callback: ProgressCallback | None = None,
         verbose: bool = False,
-        keep_alive: bool = None,
-    ):
+        keep_alive: bool | None = None,
+    ) -> Response:
         """
         Make a DELETE request
 
@@ -1520,25 +1708,39 @@ class Client:
     async def options(
         self,
         url: str,
-        params: Union[dict[str, str], tuple[str, str], str, bytes] = None,
-        headers: dict[str, str] = None,
-        cookies: dict[str, str] = None,
-        http_version: Literal["auto", "1", "1.1", "2", "3"] = None,
-        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] = None,
-        timeout: tuple = None,
-        allow_redirects: Union[bool, int] = True,
+        params: (
+            dict[str, str | list[str] | None]
+            | list[tuple[str, str]]
+            | tuple[tuple[str, str], ...]
+            | str
+            | bytes
+            | None
+        ) = None,
+        headers: dict[str | bytes, str | bytes | None] | None = None,
+        cookies: dict[str, str] | None = None,
+        http_version: Literal["auto", "1", "1.1", "2", "3"] | None = None,
+        tls_version: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        tls_version_max: Literal["default", "1.0", "1.1", "1.2", "1.3"] | None = None,
+        timeout: tuple[float, float] | None = None,
+        allow_redirects: bool | int = True,
         proxy_url: str = "",
-        no_proxy: str = None,
-        interface: str = None,
-        unix_socket: str = None,
-        ip_version: Literal["any", "4", "6"] = None,
+        no_proxy: str | None = None,
+        interface: str | None = None,
+        unix_socket: str | None = None,
+        ip_version: Literal["any", "4", "6"] | None = None,
         verify: bool = True,
-        auth: Union[tuple, str] = None,
-        cert: str = None,
+        auth: (
+            tuple[str, str]
+            | tuple[
+                str, str, Literal["basic", "digest", "digest_ie", "ntlm", "any"]
+            ]
+            | str
+            | None
+        ) = None,
+        cert: str | None = None,
         verbose: bool = False,
-        keep_alive: bool = None,
-    ):
+        keep_alive: bool | None = None,
+    ) -> Response:
         """
         Make an OPTIONS request
 
@@ -1647,7 +1849,7 @@ class Client:
             keep_alive=keep_alive,
         )
 
-    async def close(self):
+    async def close(self) -> None:
         """
         Close the RedC client and free up resources.
 
@@ -1657,7 +1859,9 @@ class Client:
 
         return await self.__loop.run_in_executor(None, self.__redc_ext.close)
 
-    def __build_headers(self, headers):
+    def __build_headers(
+        self, headers: dict[str | bytes, str | bytes | None] | None
+    ) -> list[str]:
         if headers is None:
             return self.__default_headers_list
 
@@ -1696,7 +1900,7 @@ class Client:
 
         return [f"{k};" if v in empty else f"{k}: {v}" for k, v in h.items()]
 
-    def __set_default_headers(self):
+    def __set_default_headers(self) -> None:
         if "user-agent" not in self.__default_headers:
             self.__default_headers["user-agent"] = f"redc/{redc.__version__}"
 

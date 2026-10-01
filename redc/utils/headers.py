@@ -1,11 +1,14 @@
+from __future__ import annotations
+
 import re
+from typing import Any
 
 LINK_SPLITTER = re.compile(r",(?=\s*<)")
 LINK_MATCHER = re.compile(r"\s*<([^>]+)>\s*(.*)")
 PARAM_MATCHER = re.compile(r';\s*([a-zA-Z0-9\-\*]+)\s*=\s*(?:"([^"]*)"|([^,;]*))')
 
 
-def check_key_dict(key: str, data: dict):
+def check_key_dict(key: str, data: dict[str, Any]) -> bool:
     key = key.lower()
     for k in data.keys():
         if key == k.lower():
@@ -14,7 +17,7 @@ def check_key_dict(key: str, data: dict):
     return False
 
 
-def parse_link_header(header):
+def parse_link_header(header: str | None) -> list[dict[str, str]] | None:
     if not header:
         return None
 
@@ -46,11 +49,11 @@ NON_COMBINABLE_HEADERS = {
 
 
 class Headers(dict):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__()
         self.update(*args, **kwargs)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: str | None) -> None:
         key = key.lower()
 
         if key in self:
@@ -69,25 +72,25 @@ class Headers(dict):
 
         super().__setitem__(key, value)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: str) -> str | list[str] | None:
         return super().__getitem__(key.lower())
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         super().__delitem__(key.lower())
 
-    def __contains__(self, key):
+    def __contains__(self, key: Any) -> bool:
         return super().__contains__(key.lower())
 
-    def get(self, key, default=None):
+    def get(self, key: str, default: Any = None) -> Any:
         return super().get(key.lower(), default)
 
-    def pop(self, key, default=None):
+    def pop(self, key: str, default: Any = None) -> Any:
         return super().pop(key.lower(), default)
 
-    def setdefault(self, key, default=None):
+    def setdefault(self, key: str, default: Any = None) -> Any:
         return super().setdefault(key.lower(), default)
 
-    def update(self, *args, **kwargs):
+    def update(self, *args: Any, **kwargs: Any) -> None:
         if args:
             if len(args) > 1:
                 raise TypeError(f"update expected at most 1 arguments, got {len(args)}")
@@ -104,7 +107,7 @@ class Headers(dict):
             self[key] = value
 
     @staticmethod
-    def parse_history(raw_headers: bytes) -> list["History"]:
+    def parse_history(raw_headers: bytes) -> list[History]:
         text = raw_headers.decode("iso-8859-1")
         blocks = text.split("\r\n\r\n")
 
@@ -147,7 +150,7 @@ class Headers(dict):
         return history
 
     @staticmethod
-    def parse_last_header(raw_headers: bytes) -> "History":
+    def parse_last_header(raw_headers: bytes) -> History:
         text = raw_headers.decode("iso-8859-1")
         blocks = text.split("\r\n\r\n")
 
@@ -192,17 +195,17 @@ class History:
     def __init__(
         self,
         *,
-        url: str,
+        url: str | None,
         http_version: str,
         headers: Headers,
         status_code: int,
-    ):
+    ) -> None:
         self.url = url
         self.http_version = http_version
         self.headers = headers
         self.status_code = status_code
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             f"<History [{self.status_code}] HTTP/{self.http_version} url={self.url!r}>"
         )
