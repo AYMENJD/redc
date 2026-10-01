@@ -2,8 +2,6 @@ name: Build and Publish Wheels
 on:
   workflow_dispatch:
   push:
-    branches:
-      - "main"
     tags:
       - "v*"
 
